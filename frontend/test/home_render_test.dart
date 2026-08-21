@@ -2,6 +2,8 @@ import 'package:beach_safety/core/theme/app_theme.dart';
 import 'package:beach_safety/data/mock_beach_repository.dart';
 import 'package:beach_safety/data/mock_data.dart';
 import 'package:beach_safety/features/alerts/alert_detail_screen.dart';
+import 'package:beach_safety/features/maps/india_geometry.dart';
+import 'package:beach_safety/features/maps/maps_screen.dart';
 import 'package:beach_safety/features/shell/app_shell.dart';
 import 'package:beach_safety/state/providers.dart';
 import 'package:flutter/material.dart';
@@ -10,12 +12,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('Home renders the beach, risk banner and alerts', (tester) async {
+    final geometry = await _loadGeometry(tester);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(
             MockBeachRepository(latency: Duration.zero),
           ),
+          indiaGeometryProvider.overrideWith((ref) => geometry),
         ],
         child: MaterialApp(theme: buildAppTheme(), home: const AppShell()),
       ),
@@ -54,12 +59,15 @@ void main() {
   });
 
   testWidgets('a beach with no alerts shows the safe empty state', (tester) async {
+    final geometry = await _loadGeometry(tester);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(
             MockBeachRepository(latency: Duration.zero),
           ),
+          indiaGeometryProvider.overrideWith((ref) => geometry),
           // Om Beach (id 4) is the low-risk beach carrying no alerts, which is
           // what the low-risk Home design shows.
           selectedBeachIdProvider.overrideWith(() => _FixedBeachId(4)),
@@ -80,4 +88,13 @@ class _FixedBeachId extends SelectedBeachId {
 
   @override
   int? build() => id;
+}
+
+/// AppShell holds every tab in an IndexedStack, so the Maps tab builds even in
+/// a Home test. Its outline comes from rootBundle, which needs a real async
+/// pump that pumpAndSettle cannot provide — load it up front instead.
+Future<IndiaGeometry> _loadGeometry(WidgetTester tester) async {
+  late final IndiaGeometry geometry;
+  await tester.runAsync(() async => geometry = await IndiaGeometry.load());
+  return geometry;
 }

@@ -110,6 +110,29 @@ fills the frame while the image decodes and stands in if an asset is ever
 missing, so a failed load degrades to something deliberate rather than to a
 blank rectangle.
 
+## Maps tab
+
+A vector map of India rendered from a bundled outline — no tile server, no API
+key, and nothing to fetch at runtime, so it works on a venue's dead wifi.
+
+- **Boundaries**: Natural Earth 1:10m admin-0, **India point-of-view** edition
+  (`ne_10m_admin_0_countries_ind`), public domain, simplified to 23 rings /
+  ~3,100 points (54 KB) in `assets/geo/india.json`. The POV edition matters:
+  the default Natural Earth release draws Jammu & Kashmir on de-facto control
+  lines rather than India's official boundary, which is the wrong depiction to
+  ship in an Indian government context. Andaman & Nicobar and Lakshadweep are
+  included — Radhanagar Beach is in the Andamans.
+- **Projection**: Web Mercator, fitted to the viewport without distorting the
+  aspect ratio. `MapProjection` is shared by the painter and by hit-testing, so
+  a marker is always drawn where a tap will find it.
+- **Bounded**: `InteractiveViewer` with `constrained: true` and a zero boundary
+  margin. The country cannot be dragged off screen. Zoom is 1x to 12x.
+- **Constant-size markers**: radii and stroke widths divide by the current
+  zoom, so pins stay pickable instead of growing into blobs.
+
+Regenerating the outline (needs network) is scripted in the commit that added
+it; the asset is committed, so a normal build never touches the internet.
+
 ## Visual checks
 
 Screens can be rendered to PNG without booting a device:
