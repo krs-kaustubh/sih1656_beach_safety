@@ -102,9 +102,9 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
     final beachesAsync = ref.watch(beachesProvider);
     final selectedId = ref.watch(selectedBeachProvider).value?.id;
 
-    return Scaffold(
-      backgroundColor: MapPalette.light.water,
-      body: switch ((geometryAsync, beachesAsync)) {
+    return ColoredBox(
+      color: MapPalette.light.water,
+      child: switch ((geometryAsync, beachesAsync)) {
         (AsyncData(value: final geometry), AsyncData(value: final beaches)) =>
           _MapView(
             geometry: geometry,
@@ -134,9 +134,6 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
     );
   }
 }
-
-/// Height of AppShell's bottom navigation bar, which overlays this screen.
-const double _bottomNavClearance = 62;
 
 class _MapView extends StatelessWidget {
   const _MapView({
@@ -218,9 +215,10 @@ class _MapView extends StatelessWidget {
           Positioned(
             left: Insets.lg,
             right: Insets.lg,
-            bottom: MediaQuery.viewPaddingOf(context).bottom +
-                _bottomNavClearance +
-                Insets.md,
+            // AppShell sets extendBody, so its Scaffold folds the nav bar
+            // height into the body's bottom padding. Reading it here beats
+            // hard-coding a clearance that drifts when the bar changes.
+            bottom: MediaQuery.paddingOf(context).bottom + Insets.md,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
