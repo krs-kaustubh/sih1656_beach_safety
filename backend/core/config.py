@@ -1,0 +1,82 @@
+from enum import Enum
+from typing import Dict, Optional
+from pydantic import BaseModel, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class LocationEnum(str, Enum):
+    JUHU = "juhu"
+    MARINA = "marina"
+    RADHANAGAR = "radhanagar"
+
+
+class LocationCoords(BaseModel):
+    name: str
+    lat: float
+    lon: float
+
+
+LOCATION_MAP: Dict[LocationEnum, LocationCoords] = {
+    LocationEnum.JUHU: LocationCoords(name="Juhu Beach, Mumbai", lat=19.1075, lon=72.8263),
+    LocationEnum.MARINA: LocationCoords(name="Marina Beach, Chennai", lat=13.0500, lon=80.2824),
+    LocationEnum.RADHANAGAR: LocationCoords(name="Radhanagar Beach, Havelock", lat=11.9841, lon=92.9515),
+}
+
+
+class DemoSettings(BaseSettings):
+    """Demo operational flags."""
+    USE_MOCK_DATA: bool = False
+    ENABLE_EXTREMES_MOCK: bool = False
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+class ProviderAPISettings(BaseSettings):
+    """API Keys and Base URLs for all weather/marine providers."""
+    # Free Public APIs (No key required)
+    INCOIS_ERDDAP_URL: str = "https://erddap.incois.gov.in/erddap"
+    OPEN_METEO_URL: str = "https://api.open-meteo.com/v1/forecast"
+    OPEN_METEO_MARINE_URL: str = "https://marine-api.open-meteo.com/v1/marine"
+
+    # Commercial APIs with fallback alias support for .env naming
+    TOMORROW_IO_KEY: SecretStr = SecretStr("")
+    TOMORROWIO_API_KEY: Optional[str] = None
+    TOMORROW_IO_URL: str = "https://api.tomorrow.io/v4/weather/realtime"
+
+    OPENWEATHER_KEY: SecretStr = SecretStr("")
+    OPENWEATHER_API_KEY: Optional[str] = None
+    OPENWEATHER_URL: str = "https://api.openweathermap.org/data/2.5/weather"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    def get_tomorrow_key(self) -> str:
+        if self.TOMORROWIO_API_KEY:
+            return self.TOMORROWIO_API_KEY
+        return self.TOMORROW_IO_KEY.get_secret_value()
+
+    def get_openweather_key(self) -> str:
+        if self.OPENWEATHER_API_KEY:
+            return self.OPENWEATHER_API_KEY
+        return self.OPENWEATHER_KEY.get_secret_value()
+
+
+class Settings(BaseSettings):
+    demo: DemoSettings = DemoSettings()
+    providers: ProviderAPISettings = ProviderAPISettings()
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+settings = Settings()
