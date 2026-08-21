@@ -54,8 +54,22 @@ class RiskBackdrop extends StatelessWidget {
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
             // A missing or corrupt asset must not take the screen down
-            // mid-demo; fall through to the painted scene below.
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            // mid-demo, so fall through to the painted scene below. Say so in
+            // debug builds though: the painted scene resembles the photo
+            // closely enough that a silent failure is indistinguishable from
+            // a stale asset bundle, which is a miserable thing to debug.
+            errorBuilder: (_, error, _) {
+              assert(() {
+                debugPrint(
+                  'RiskBackdrop: could not load "$asset" ($error). '
+                  'Falling back to the painted scene. If you just added this '
+                  'asset, restart the app — hot reload does not rebuild the '
+                  'asset bundle.',
+                );
+                return true;
+              }());
+              return const SizedBox.shrink();
+            },
           ),
           // Top scrim. The beach name, region and search field are white, and
           // a photo's sky can be bright anywhere — the sun sits in the top
