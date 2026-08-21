@@ -31,7 +31,7 @@ class BeachSafetyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Beach Safety',
+      title: 'Lehar',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: const AppShell(),

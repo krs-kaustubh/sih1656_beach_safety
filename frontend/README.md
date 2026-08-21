@@ -1,6 +1,7 @@
-# Beach Safety — Flutter Frontend
+# Lehar — Flutter Frontend
 
-Mobile client for the Beach Safety API (SIH PS 1656). Targets Android first, iOS
+Lehar (लहर, "wave") is the mobile client for the Beach Safety API
+(SIH PS 1656). Targets Android first, iOS
 from the same codebase.
 
 > The `backend/` directory is owned by another track of this project and is not
@@ -109,6 +110,29 @@ Two layers sit over the photo and matter if you swap in a different image:
 fills the frame while the image decodes and stands in if an asset is ever
 missing, so a failed load degrades to something deliberate rather than to a
 blank rectangle.
+
+## Branding
+
+The app is **Lehar** — लहर, "wave". Short enough that the Android home-screen
+label never truncates.
+
+Icons and the launch screen are generated, not hand-placed:
+
+```bash
+dart run flutter_launcher_icons        # app icons, both platforms
+dart run flutter_native_splash:create  # launch screen, both platforms
+```
+
+Source art is `assets/branding/`. The supplied logo arrived as a navy card on a
+white background with a drop shadow, which would have produced a small icon
+floating inside a white square with doubled rounded corners. `icon.png` is
+cropped to the card with its corners flood-filled navy so it is full-bleed.
+
+`icon_foreground.png` is that same card inset to Android's 66% safe zone rather
+than the emblem cut out of it. Extracting the shield by colour threshold chewed
+its white outline and left ragged corners; since the adaptive background is the
+same navy (`#01214E`), the inset padding blends invisibly and nothing needs
+cutting out.
 
 ## Alerts tab
 
