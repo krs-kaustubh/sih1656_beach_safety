@@ -1,0 +1,7 @@
+tags:
+  golden:
+    # Golden images render without bundled fonts and vary by host, so they are
+    # a local visual-inspection tool rather than a CI assertion.
+    #   flutter test --run-skipped -t golden --update-goldens
+    # then open frontend/test/goldens/*.png
+    skip: "Visual check only. Run: flutter test --run-skipped -t golden --update-goldens"

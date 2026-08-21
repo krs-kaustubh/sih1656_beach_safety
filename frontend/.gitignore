@@ -32,3 +32,6 @@ ios/Flutter/flutter_export_environment.sh
 # Misc
 *.iml
 .DS_Store
+
+# Golden images are regenerated on demand; see dart_test.yaml.
+test/goldens/

@@ -143,12 +143,15 @@ class _AlertsUnavailable extends StatelessWidget {
     final risk = RiskTheme.of(context);
     return Row(
       children: [
-        Icon(Icons.cloud_off_rounded, size: 18, color: risk.onBackdropMuted),
+        Icon(Icons.cloud_off_rounded, size: 18, color: risk.contentForeground),
         const SizedBox(width: Insets.sm),
         Expanded(
           child: Text(
             'Alerts are unavailable right now.',
-            style: TextStyle(color: risk.onBackdropMuted, fontSize: 14),
+            style: TextStyle(
+              color: risk.contentForeground.withValues(alpha: 0.8),
+              fontSize: 14,
+            ),
           ),
         ),
       ],

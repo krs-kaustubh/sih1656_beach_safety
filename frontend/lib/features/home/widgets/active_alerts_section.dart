@@ -28,7 +28,7 @@ class ActiveAlertsSection extends StatelessWidget {
       children: [
         Text(
           'Active Alerts',
-          style: AppText.sectionHeader.copyWith(color: risk.headerForeground),
+          style: AppText.sectionHeader.copyWith(color: risk.contentForeground),
         ),
         const SizedBox(height: Insets.md),
         if (alerts.isEmpty)

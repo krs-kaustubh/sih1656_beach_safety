@@ -23,6 +23,7 @@ class RiskTheme {
     required this.accent,
     required this.metricIcon,
     required this.headerForeground,
+    required this.contentForeground,
     required this.detailHeader,
     required this.detailBackdrop,
     required this.detailSurface,
@@ -50,8 +51,12 @@ class RiskTheme {
 
   final Color metricIcon;
 
-  /// Text drawn directly over [backdrop].
+  /// Text drawn over the *top* of [backdrop], which is dark on every scene.
   final Color headerForeground;
+
+  /// Text drawn further down the page, where the light scenes have faded to a
+  /// pale surface and [headerForeground] would be nearly invisible.
+  final Color contentForeground;
 
   /// Solid header block at the top of the alert detail screen.
   final Color detailHeader;
@@ -79,6 +84,7 @@ class RiskTheme {
     accent: Color(0xFF1B7F4F),
     metricIcon: Color(0xFF1E5A8A),
     headerForeground: Colors.white,
+    contentForeground: Color(0xFF15242E),
     detailHeader: Color(0xFF0E4F4A),
     detailBackdrop: Color(0xFF07242B),
     detailSurface: Color(0xFFFFFFFF),
@@ -98,6 +104,7 @@ class RiskTheme {
     accent: Color(0xFFC9720C),
     metricIcon: Color(0xFF23557F),
     headerForeground: Colors.white,
+    contentForeground: Color(0xFF2B1A05),
     detailHeader: Color(0xFFE08A0B),
     detailBackdrop: Color(0xFF3A2405),
     detailSurface: Color(0xFFFFFAF1),
@@ -117,6 +124,7 @@ class RiskTheme {
     accent: Color(0xFFE5484D),
     metricIcon: Color(0xFFD8CFD1),
     headerForeground: Colors.white,
+    contentForeground: Colors.white,
     detailHeader: Color(0xFF8E1420),
     detailBackdrop: Color(0xFF120A0C),
     detailSurface: Color(0xFF1A1113),

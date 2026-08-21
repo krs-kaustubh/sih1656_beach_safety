@@ -82,6 +82,36 @@ the app stays readable for colour-blind users.
 Loading skeletons, error and empty states, pull-to-refresh, offline cache of
 the last successful response, app icon and splash.
 
+## Backdrops
+
+The designs put a photograph behind Home — clear day, sunset, storm — one per
+risk level. `BackdropScenePainter` draws those three moods procedurally: no
+asset weight, correct at any screen size, and tinted from the same palette as
+the rest of the screen.
+
+To use real photographs instead, drop them in `assets/backdrops/`, declare the
+directory in `pubspec.yaml`, and pass the path:
+
+```dart
+RiskBackdrop(imageAsset: 'assets/backdrops/storm.jpg', child: ...)
+```
+
+`RiskBackdrop` then swaps the painted scene for the image and keeps the same
+fade, so the cards below do not lose contrast.
+
+## Visual checks
+
+Screens can be rendered to PNG without booting a device:
+
+```bash
+flutter test --run-skipped -t golden --update-goldens
+open test/goldens/
+```
+
+These render without bundled fonts (text appears as blocks) and vary by host,
+so they are a local inspection tool, not a CI assertion — hence skipped in the
+default `flutter test` run.
+
 ### Phase 5 — Demo build
 Release APK for sideloading onto judges' devices; iOS build kept green.
 
