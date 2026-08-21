@@ -1,0 +1,34 @@
+# The repo-root .gitignore excludes lib/, dist/ and build/ for Python
+# packaging. lib/ is Flutter's source directory, so re-include it here.
+# (A nested .gitignore overrides its parent's patterns.)
+!lib/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.g.dart
+*.freezed.dart
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# Misc
+*.iml
+.DS_Store
