@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/formatting.dart';
+import '../../../settings/settings_providers.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/risk_theme.dart';
 import '../../../models/conditions.dart';
 import 'metric_card.dart';
 
 /// The 2x2 grid of readings under the risk banner.
-class ConditionsGrid extends StatelessWidget {
+class ConditionsGrid extends ConsumerWidget {
   const ConditionsGrid({super.key, required this.conditions});
 
   final Conditions conditions;
@@ -25,33 +27,35 @@ class ConditionsGrid extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final risk = RiskTheme.of(context);
+    final fmt = ref.watch(formatterProvider);
     final tide = conditions.nextTide;
     final uv = conditions.uvIndex;
+
+    final wave = fmt.waveHeight(conditions.waveHeightMeters);
+    final wind = fmt.windSpeed(
+      conditions.windSpeedKph,
+      direction: conditions.windDirection,
+    );
 
     final cards = <Widget>[
       MetricCard(
         icon: Icons.waves_rounded,
         label: 'Wave Height',
-        value: Fmt.number(conditions.waveHeightMeters),
-        unit: 'm',
+        value: wave.value,
+        unit: wave.unit,
       ),
       MetricCard(
         icon: Icons.air_rounded,
         label: 'Wind',
-        value: conditions.windSpeedKph == null
-            ? null
-            : Fmt.number(conditions.windSpeedKph!, decimals: 0),
-        unit: [
-          'km/h',
-          if (conditions.windDirection != null) conditions.windDirection!,
-        ].join(' '),
+        value: conditions.windSpeedKph == null ? null : wind.value,
+        unit: wind.unit,
       ),
       MetricCard(
         icon: Icons.wb_sunny_outlined,
         label: 'UV Index',
-        value: uv == null ? null : Fmt.uv(uv),
+        value: uv == null ? null : fmt.uv(uv),
         unit: conditions.uvBand?.label,
         valueColor: _uvColor(risk, conditions.uvBand),
         iconColor: _uvColor(risk, conditions.uvBand),
@@ -59,7 +63,7 @@ class ConditionsGrid extends StatelessWidget {
       MetricCard(
         icon: Icons.water_rounded,
         label: 'Next Tide',
-        value: tide == null ? null : Fmt.tideClock(tide.time),
+        value: tide == null ? null : fmt.clock(tide.time),
         unit: tide?.phase.label,
       ),
     ];

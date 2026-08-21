@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/formatting.dart';
+import '../../settings/settings_providers.dart';
+import '../../settings/unit_formatter.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/risk_theme.dart';
 import '../../models/safety_alert.dart';
@@ -14,14 +17,14 @@ import 'widgets/risk_meter.dart';
 ///
 /// Themed by the *alert's* risk level rather than the beach's, so a moderate
 /// advisory keeps its amber treatment even when opened from a high-risk beach.
-class AlertDetailScreen extends StatelessWidget {
+class AlertDetailScreen extends ConsumerWidget {
   const AlertDetailScreen({super.key, required this.alert});
 
   final SafetyAlert alert;
 
-  void _share(BuildContext context) {
+  void _share(BuildContext context, UnitFormatter fmt) {
     final text = '${alert.title} — ${alert.zoneLabel}\n'
-        '${Fmt.alertValidity(alert)}\n\n'
+        '${fmt.alertValidity(alert)}\n\n'
         '${alert.whatsHappening}';
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -30,7 +33,8 @@ class AlertDetailScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fmt = ref.watch(formatterProvider);
     final risk = RiskTheme.forLevel(alert.riskLevel);
     final accent = RiskTheme.accentFor(alert.riskLevel, onDark: risk.isDark);
     final text = risk.textPrimary;
@@ -46,7 +50,12 @@ class AlertDetailScreen extends StatelessWidget {
         backgroundColor: risk.detailBackdrop,
         body: Column(
           children: [
-            _DetailHeader(alert: alert, risk: risk, onShare: () => _share(context)),
+            _DetailHeader(
+              alert: alert,
+              risk: risk,
+              formatter: fmt,
+              onShare: () => _share(context, fmt),
+            ),
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -179,11 +188,13 @@ class _DetailHeader extends StatelessWidget {
   const _DetailHeader({
     required this.alert,
     required this.risk,
+    required this.formatter,
     required this.onShare,
   });
 
   final SafetyAlert alert;
   final RiskTheme risk;
+  final UnitFormatter formatter;
   final VoidCallback onShare;
 
   @override
@@ -261,7 +272,7 @@ class _DetailHeader extends StatelessWidget {
               const SizedBox(height: Insets.xs),
               _HeaderMetaRow(
                 icon: Icons.schedule_rounded,
-                text: Fmt.alertValidity(alert),
+                text: formatter.alertValidity(alert),
               ),
             ],
           ),

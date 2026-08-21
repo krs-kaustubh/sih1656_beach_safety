@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:beach_safety/settings/settings_providers.dart';
+
+import 'support/test_settings.dart';
+
 void main() {
   const surface = Size(360, 800);
 
@@ -21,6 +25,7 @@ void main() {
 
     final container = ProviderContainer(
       overrides: [
+        settingsStoreProvider.overrideWithValue(await testSettingsStore()),
         repositoryProvider.overrideWithValue(
           MockBeachRepository(latency: Duration.zero),
         ),

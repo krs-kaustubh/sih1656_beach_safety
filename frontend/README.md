@@ -121,6 +121,37 @@ on a calm ground.
 text even at high risk. Because it is a variant of the same object, the shared
 alert widgets need no changes — they still just read `RiskTheme.of(context)`.
 
+## Settings
+
+Everything on the Settings tab takes effect immediately and persists via
+`shared_preferences`. Nothing there is a placeholder — a switch that does
+nothing is worse than an absent one, especially with a judge holding the phone.
+
+| Setting | Effect |
+| ------- | ------ |
+| Units | Wave height m/ft, wind km/h / kn / mph, water temp °C/°F |
+| Time format | 12-hour or 24-hour, applied to **every** clock in the app |
+| Alert filter | All / Moderate and above / Severe only |
+| Default beach | Which beach the app opens on |
+| Emergency contacts | Tap to dial 112, 1554, 108, 1078 |
+
+`UnitFormatter` replaced the old static `Fmt` helper: formatting now depends on
+user choice, so it needs an instance. Routing every measurement and clock
+through one object is what keeps the header from disagreeing with the tide
+readout — the app previously showed a 12-hour header beside a 24-hour tide time
+on the same screen, and a test now pins that shut.
+
+The alert filter hides advisories the user has chosen not to see. It never
+reorders them and never touches the beach's own risk rating: a beach stays
+"Moderate Risk" even when its moderate advisories are filtered out, so the
+headline can't be softened by a display preference.
+
+Emergency numbers are national short codes held in
+`lib/features/settings/emergency_contacts.dart`. **Verify them against current
+official sources before any public release**, and add per-beach lifeguard
+numbers once the backend can supply them — a wrong number in a safety app is
+worse than no number.
+
 ## Maps tab
 
 A dark terrain map of India and its neighbours, rendered from bundled assets —

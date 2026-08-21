@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/formatting.dart';
+import '../../../settings/settings_providers.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../models/conditions.dart';
 
 /// The four-across "CURRENT CONDITIONS" row on the alert detail screen.
-class ConditionsStrip extends StatelessWidget {
+class ConditionsStrip extends ConsumerWidget {
   const ConditionsStrip({
     super.key,
     required this.conditions,
@@ -20,38 +22,41 @@ class ConditionsStrip extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fmt = ref.watch(formatterProvider);
     final tide = conditions.nextTide;
+
+    final wave = fmt.waveHeight(conditions.waveHeightMeters);
+    final wind = fmt.windSpeed(
+      conditions.windSpeedKph,
+      direction: conditions.windDirection,
+    );
+    final temp = fmt.temperature(conditions.waterTempCelsius);
 
     final items = <_ConditionItem>[
       _ConditionItem(
         icon: Icons.waves_rounded,
         label: 'Wave Height',
-        value: Fmt.number(conditions.waveHeightMeters),
-        unit: 'm',
+        value: wave.value,
+        unit: wave.unit,
       ),
       _ConditionItem(
         icon: Icons.air_rounded,
         label: 'Wind',
-        value: conditions.windSpeedKph == null
-            ? null
-            : Fmt.number(conditions.windSpeedKph!, decimals: 0),
-        unit: ['km/h', if (conditions.windDirection != null) conditions.windDirection!]
-            .join(' '),
+        value: conditions.windSpeedKph == null ? null : wind.value,
+        unit: wind.unit,
       ),
       _ConditionItem(
         icon: Icons.water_rounded,
         label: 'Tide',
         value: tide?.phase.label,
-        unit: tide == null ? null : Fmt.clock(tide.time),
+        unit: tide == null ? null : fmt.clock(tide.time),
         valueColor: accent,
       ),
       _ConditionItem(
         icon: Icons.thermostat_rounded,
         label: 'Water Temp',
-        value: conditions.waterTempCelsius == null
-            ? null
-            : '${Fmt.number(conditions.waterTempCelsius!, decimals: 0)}°C',
+        value: conditions.waterTempCelsius == null ? null : temp.value,
       ),
     ];
 

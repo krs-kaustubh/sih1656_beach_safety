@@ -4,6 +4,7 @@ import '../data/beach_repository.dart';
 import '../data/mock_beach_repository.dart';
 import '../models/beach.dart';
 import '../models/safety_alert.dart';
+import '../settings/settings_providers.dart';
 
 /// The single switch between mock and live data.
 ///
@@ -20,11 +21,11 @@ final beachesProvider = FutureProvider<List<Beach>>(
 
 /// Which beach the Home and Alerts tabs are showing.
 ///
-/// Null means "not chosen yet", which [selectedBeachProvider] resolves to the
-/// first available beach.
+/// Starts at the user's configured default; null means "not chosen", which
+/// [selectedBeachProvider] resolves to the first beach the backend lists.
 class SelectedBeachId extends Notifier<int?> {
   @override
-  int? build() => null;
+  int? build() => ref.read(settingsProvider).defaultBeachId;
 
   void select(int id) => state = id;
 }
@@ -42,8 +43,23 @@ final selectedBeachProvider = FutureProvider<Beach>((ref) async {
   return beaches.where((b) => b.id == selectedId).firstOrNull ?? beaches.first;
 });
 
-/// Alerts for the selected beach, most severe first.
+/// Alerts for the selected beach, most severe first, honouring the user's
+/// severity filter.
+///
+/// The filter hides advisories the user has chosen not to see; it never
+/// promotes or reorders them, so the most serious warning is always first.
 final alertsProvider = FutureProvider<List<SafetyAlert>>((ref) async {
+  final beach = await ref.watch(selectedBeachProvider.future);
+  final alerts = await ref.watch(repositoryProvider).getAlerts(beach.id);
+  final filter = ref.watch(settingsProvider).alertFilter;
+  return alerts
+      .where((a) => filter.allows(a.riskLevel))
+      .toList(growable: false);
+});
+
+/// Every alert for the selected beach, ignoring the severity filter. Used
+/// where hiding one would be misleading rather than helpful.
+final unfilteredAlertsProvider = FutureProvider<List<SafetyAlert>>((ref) async {
   final beach = await ref.watch(selectedBeachProvider.future);
   return ref.watch(repositoryProvider).getAlerts(beach.id);
 });

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/formatting.dart';
+import '../../../settings/settings_providers.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/risk_theme.dart';
 import '../../../models/risk_level.dart';
@@ -43,16 +45,17 @@ class ActiveAlertsSection extends StatelessWidget {
   }
 }
 
-class _AlertCard extends StatelessWidget {
+class _AlertCard extends ConsumerWidget {
   const _AlertCard({required this.alert, required this.onTap});
 
   final SafetyAlert alert;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final risk = RiskTheme.of(context);
     final accent = RiskTheme.accentFor(alert.riskLevel, onDark: risk.isDark);
+    final fmt = ref.watch(formatterProvider);
 
     return SurfaceCard(
       onTap: onTap,
@@ -73,7 +76,7 @@ class _AlertCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  Fmt.alertMeta(alert),
+                  fmt.alertMeta(alert),
                   style: AppText.alertMeta.copyWith(color: risk.textSecondary),
                 ),
               ],

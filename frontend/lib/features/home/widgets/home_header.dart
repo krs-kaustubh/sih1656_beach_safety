@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/formatting.dart';
+import '../../../settings/settings_providers.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/risk_theme.dart';
 import '../../../models/beach.dart';
 
 /// Beach name, region and the current-time pill.
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key, required this.beach, required this.time});
 
   final Beach beach;
   final DateTime time;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final risk = RiskTheme.of(context);
+    final fmt = ref.watch(formatterProvider);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +49,7 @@ class HomeHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(Radii.chip),
           ),
           child: Text(
-            Fmt.clock(time),
+            fmt.clock(time),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

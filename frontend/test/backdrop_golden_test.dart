@@ -10,6 +10,10 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:beach_safety/settings/settings_providers.dart';
+
+import 'support/test_settings.dart';
+
 /// Renders Home at each risk level so the painted backdrops can be reviewed
 /// without booting a device. Regenerate with:
 ///   flutter test --update-goldens test/backdrop_golden_test.dart
@@ -38,6 +42,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            settingsStoreProvider.overrideWithValue(await testSettingsStore()),
             repositoryProvider.overrideWithValue(
               MockBeachRepository(latency: Duration.zero),
             ),

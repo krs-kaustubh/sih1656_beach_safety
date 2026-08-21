@@ -9,6 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:beach_safety/settings/settings_providers.dart';
+
+import 'support/test_settings.dart';
+
 /// Renders the Alerts tab at each severity so the gradient backdrops can be
 /// reviewed without a device. See dart_test.yaml for how to run it.
 void main() {
@@ -26,6 +30,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            settingsStoreProvider.overrideWithValue(await testSettingsStore()),
             repositoryProvider.overrideWithValue(
               MockBeachRepository(latency: Duration.zero),
             ),

@@ -10,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:beach_safety/settings/settings_providers.dart';
+
+import 'support/test_settings.dart';
+
 void main() {
   testWidgets('Home renders the beach, risk banner and alerts', (tester) async {
     final geometry = await _loadGeometry(tester);
@@ -17,6 +21,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          settingsStoreProvider.overrideWithValue(await testSettingsStore()),
           repositoryProvider.overrideWithValue(
             MockBeachRepository(latency: Duration.zero),
           ),
@@ -43,7 +48,15 @@ void main() {
     final alert = MockData.alerts().first;
 
     await tester.pumpWidget(
-      MaterialApp(theme: buildAppTheme(), home: AlertDetailScreen(alert: alert)),
+      ProviderScope(
+        overrides: [
+          settingsStoreProvider.overrideWithValue(await testSettingsStore()),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: AlertDetailScreen(alert: alert),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -64,6 +77,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          settingsStoreProvider.overrideWithValue(await testSettingsStore()),
           repositoryProvider.overrideWithValue(
             MockBeachRepository(latency: Duration.zero),
           ),

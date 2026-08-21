@@ -13,6 +13,10 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:beach_safety/settings/settings_providers.dart';
+
+import 'support/test_settings.dart';
+
 /// Renders the Maps tab so the India outline, projection and markers can be
 /// reviewed without a device. See dart_test.yaml for how to run it.
 void main() {
@@ -35,6 +39,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          settingsStoreProvider.overrideWithValue(await testSettingsStore()),
           repositoryProvider.overrideWithValue(
             MockBeachRepository(latency: Duration.zero),
           ),
