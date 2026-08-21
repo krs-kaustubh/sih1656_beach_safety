@@ -112,26 +112,43 @@ blank rectangle.
 
 ## Maps tab
 
-A vector map of India rendered from a bundled outline — no tile server, no API
-key, and nothing to fetch at runtime, so it works on a venue's dead wifi.
+A dark terrain map of India and its neighbours, rendered from bundled assets —
+no tile server, no API key, and nothing fetched at runtime, so it works on a
+venue's dead wifi.
+
+| Asset                     | Size   | What it is                                    |
+| ------------------------- | ------ | --------------------------------------------- |
+| `assets/geo/region.json`  | 293 KB | 27 country outlines, label anchors, 30 cities |
+| `assets/geo/terrain.jpg`  | 724 KB | Relief texture, pre-reprojected to Mercator   |
 
 - **Boundaries**: Natural Earth 1:10m admin-0, **India point-of-view** edition
-  (`ne_10m_admin_0_countries_ind`), public domain, simplified to 23 rings /
-  ~3,100 points (54 KB) in `assets/geo/india.json`. The POV edition matters:
-  the default Natural Earth release draws Jammu & Kashmir on de-facto control
-  lines rather than India's official boundary, which is the wrong depiction to
-  ship in an Indian government context. Andaman & Nicobar and Lakshadweep are
-  included — Radhanagar Beach is in the Andamans.
-- **Projection**: Web Mercator, fitted to the viewport without distorting the
-  aspect ratio. `MapProjection` is shared by the painter and by hit-testing, so
-  a marker is always drawn where a tap will find it.
-- **Bounded**: `InteractiveViewer` with `constrained: true` and a zero boundary
-  margin. The country cannot be dragged off screen. Zoom is 1x to 12x.
-- **Constant-size markers**: radii and stroke widths divide by the current
-  zoom, so pins stay pickable instead of growing into blobs.
+  (`ne_10m_admin_0_countries_ind`), public domain. The POV edition matters: the
+  default Natural Earth release draws Jammu & Kashmir on de-facto control lines
+  rather than India's official boundary, which is the wrong depiction to ship
+  in an Indian government context. Andaman & Nicobar and Lakshadweep are kept —
+  Radhanagar Beach is in the Andamans.
+- **Terrain**: Natural Earth's cross-blended hypsometric tint with shaded
+  relief, cropped to the region, reprojected from equirectangular to Web
+  Mercator so it lines up with `MapProjection`, and darkened for the app.
+- **Crisp coasts at any zoom**: the texture is clipped to the *vector*
+  coastline and the ocean is painted by the app, so coast edges stay sharp
+  however far you zoom even though the fill is raster. Land colours are bled a
+  few pixels out to sea during preprocessing so the simplified vector coast
+  can never expose a blue fringe.
+- **Framing**: opens fitted to India. The wider region exists so neighbours are
+  reachable by zooming out; "Fit India" returns to the opening view. Pan and
+  zoom are bounded to the region and everything geographic is clipped to it,
+  with a soft edge where the data ends.
+- **Labels declutter themselves**: countries first, then cities by rank, each
+  skipped if it would collide with one already placed. Cities appear
+  progressively as you zoom. Without this the opening view is unreadable — 27
+  countries and 30 cities all want a label at once.
+- **Constant-size markers**: radii, stroke widths and label sizes divide by the
+  current zoom, so nothing grows into a blob.
 
-Regenerating the outline (needs network) is scripted in the commit that added
-it; the asset is committed, so a normal build never touches the internet.
+Regenerate the assets (needs network) with `tool/build_region.py` and `tool/build_terrain.py`;
+their docstrings carry the exact commands and explains why that source file is
+the right one.
 
 ## Visual checks
 

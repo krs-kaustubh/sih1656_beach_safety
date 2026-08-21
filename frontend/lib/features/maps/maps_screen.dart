@@ -1,17 +1,31 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/risk_theme.dart';
 import '../../models/beach.dart';
 import '../../state/providers.dart';
-import 'india_geometry.dart';
-import 'india_map_painter.dart';
+import 'map_geometry.dart';
 import 'map_projection.dart';
+import 'terrain_map_painter.dart';
 
-/// Loads the bundled outline once for the whole app.
-final indiaGeometryProvider =
-    FutureProvider<IndiaGeometry>((ref) => IndiaGeometry.load());
+/// Loads the bundled outlines once for the whole app.
+final mapGeometryProvider = FutureProvider<MapGeometry>(
+  (ref) => MapGeometry.load(),
+);
+
+/// Decodes the relief texture once. Kept separate from the geometry so the
+/// map can draw as soon as the vectors are ready and fill in the terrain when
+/// the image arrives, rather than blocking on a 668 KB decode.
+final terrainImageProvider = FutureProvider<ui.Image>((ref) async {
+  final data = await rootBundle.load('assets/geo/terrain.jpg');
+  final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final frame = await codec.getNextFrame();
+  return frame.image;
+});
 
 /// The Maps tab: every monitored beach plotted on India, colour-coded by risk.
 ///
@@ -71,10 +85,43 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
       ..translateByDouble(-scene.dx, -scene.dy, 0, 1);
   }
 
-  void _reset() => _controller.value = Matrix4.identity();
+  /// Frames India inside [viewport]. This is both the opening view and what
+  /// the "Fit India" control returns to — the wider region exists so the
+  /// neighbours are reachable by zooming out, not as the default framing.
+  Matrix4 _indiaView(
+    Size viewport,
+    MapProjection projection,
+    MapGeometry geometry,
+  ) {
+    final rect = projection.rectFor(geometry.indiaBounds);
+    if (rect.width <= 0 || rect.height <= 0) return Matrix4.identity();
 
-  void _handleTap(Offset localPosition, MapProjection projection,
-      List<Beach> beaches) {
+    const padding = 0.90;
+    final scale =
+        (viewport.width / rect.width) < (viewport.height / rect.height)
+        ? viewport.width / rect.width * padding
+        : viewport.height / rect.height * padding;
+    final clamped = scale.clamp(_minZoom, _maxZoom);
+
+    return Matrix4.identity()
+      ..translateByDouble(viewport.width / 2, viewport.height / 2, 0, 1)
+      ..scaleByDouble(clamped, clamped, clamped, 1)
+      ..translateByDouble(-rect.center.dx, -rect.center.dy, 0, 1);
+  }
+
+  void _fitIndia(
+    Size viewport,
+    MapProjection projection,
+    MapGeometry geometry,
+  ) {
+    _controller.value = _indiaView(viewport, projection, geometry);
+  }
+
+  void _handleTap(
+    Offset localPosition,
+    MapProjection projection,
+    List<Beach> beaches,
+  ) {
     // localPosition is already in child coordinates, so it can be compared
     // directly against projected marker centres.
     const slopPixels = 22.0;
@@ -98,16 +145,17 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final geometryAsync = ref.watch(indiaGeometryProvider);
+    final geometryAsync = ref.watch(mapGeometryProvider);
     final beachesAsync = ref.watch(beachesProvider);
     final selectedId = ref.watch(selectedBeachProvider).value?.id;
 
     return ColoredBox(
-      color: MapPalette.light.water,
+      color: TerrainPalette.dark.oceanDeep,
       child: switch ((geometryAsync, beachesAsync)) {
         (AsyncData(value: final geometry), AsyncData(value: final beaches)) =>
           _MapView(
             geometry: geometry,
+            terrain: ref.watch(terrainImageProvider).value,
             beaches: beaches,
             selectedId: selectedId,
             controller: _controller,
@@ -117,18 +165,19 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
             onTapAt: _handleTap,
             onZoomIn: () => _zoomBy(1.6),
             onZoomOut: () => _zoomBy(1 / 1.6),
-            onReset: _reset,
+            onFitIndia: _fitIndia,
           ),
-        (AsyncError(:final error), _) || (_, AsyncError(:final error)) =>
-          _MapMessage(
-            message: error
-                .toString()
-                .replaceFirst('BeachRepositoryException: ', ''),
-            onRetry: () {
-              ref.invalidate(indiaGeometryProvider);
-              ref.invalidate(beachesProvider);
-            },
+        (AsyncError(:final error), _) ||
+        (_, AsyncError(:final error)) => _MapMessage(
+          message: error.toString().replaceFirst(
+            'BeachRepositoryException: ',
+            '',
           ),
+          onRetry: () {
+            ref.invalidate(mapGeometryProvider);
+            ref.invalidate(beachesProvider);
+          },
+        ),
         _ => const Center(child: CircularProgressIndicator()),
       },
     );
@@ -138,6 +187,7 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
 class _MapView extends StatelessWidget {
   const _MapView({
     required this.geometry,
+    required this.terrain,
     required this.beaches,
     required this.selectedId,
     required this.controller,
@@ -147,10 +197,11 @@ class _MapView extends StatelessWidget {
     required this.onTapAt,
     required this.onZoomIn,
     required this.onZoomOut,
-    required this.onReset,
+    required this.onFitIndia,
   });
 
-  final IndiaGeometry geometry;
+  final MapGeometry geometry;
+  final ui.Image? terrain;
   final List<Beach> beaches;
   final int? selectedId;
   final TransformationController controller;
@@ -160,26 +211,36 @@ class _MapView extends StatelessWidget {
   final void Function(Offset, MapProjection, List<Beach>) onTapAt;
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
-  final VoidCallback onReset;
+  final void Function(Size, MapProjection, MapGeometry) onFitIndia;
 
   @override
   Widget build(BuildContext context) {
-    final selected =
-        beaches.where((b) => b.id == selectedId).firstOrNull;
+    final selected = beaches.where((b) => b.id == selectedId).firstOrNull;
 
+    // One LayoutBuilder for the whole screen: the map and the controls both
+    // need the same viewport size and projection, and computing them twice
+    // risks the "Fit India" button framing something the map is not showing.
     return SafeArea(
       bottom: false,
-      child: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final size = Size(constraints.maxWidth, constraints.maxHeight);
-              final projection = MapProjection.fit(
-                bounds: geometry.bounds,
-                size: size,
-              );
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          final projection = MapProjection.fit(
+            bounds: geometry.region,
+            size: size,
+          );
 
-              return InteractiveViewer(
+          // The opening framing needs a laid-out viewport, which is not
+          // available until here.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (controller.value.isIdentity()) {
+              onFitIndia(size, projection, geometry);
+            }
+          });
+
+          return Stack(
+            children: [
+              InteractiveViewer(
                 transformationController: controller,
                 minScale: minZoom,
                 maxScale: maxZoom,
@@ -194,58 +255,59 @@ class _MapView extends StatelessWidget {
                       onTapAt(details.localPosition, projection, beaches),
                   child: CustomPaint(
                     size: size,
-                    painter: IndiaMapPainter(
+                    painter: TerrainMapPainter(
                       geometry: geometry,
                       projection: projection,
+                      terrain: terrain,
                       beaches: beaches,
                       zoom: zoom,
                       selectedBeachId: selectedId,
-                      palette: MapPalette.light,
+                      palette: TerrainPalette.dark,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-          const _MapHeader(),
-          // One bottom stack for the controls, the card and the credit. They
-          // used to be positioned independently and the card landed on top of
-          // the zoom buttons. AppShell also sets extendBody, so the nav bar
-          // floats over this body and has to be cleared explicitly.
-          Positioned(
-            left: Insets.lg,
-            right: Insets.lg,
-            // AppShell sets extendBody, so its Scaffold folds the nav bar
-            // height into the body's bottom padding. Reading it here beats
-            // hard-coding a clearance that drifts when the bar changes.
-            bottom: MediaQuery.paddingOf(context).bottom + Insets.md,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _ZoomControls(
-                  onZoomIn: onZoomIn,
-                  onZoomOut: onZoomOut,
-                  onReset: onReset,
-                  canZoomIn: zoom < maxZoom - 0.01,
-                  canZoomOut: zoom > minZoom + 0.01,
+              ),
+              const _MapHeader(),
+              // One bottom stack for the controls, the card and the credit. They
+              // used to be positioned independently and the card landed on top of
+              // the zoom buttons. AppShell also sets extendBody, so the nav bar
+              // floats over this body and has to be cleared explicitly.
+              Positioned(
+                left: Insets.lg,
+                right: Insets.lg,
+                // AppShell sets extendBody, so its Scaffold folds the nav bar
+                // height into the body's bottom padding. Reading it here beats
+                // hard-coding a clearance that drifts when the bar changes.
+                bottom: MediaQuery.paddingOf(context).bottom + Insets.md,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ZoomControls(
+                      onZoomIn: onZoomIn,
+                      onZoomOut: onZoomOut,
+                      onReset: () => onFitIndia(size, projection, geometry),
+                      canZoomIn: zoom < maxZoom - 0.01,
+                      canZoomOut: zoom > minZoom + 0.01,
+                    ),
+                    if (selected != null) ...[
+                      const SizedBox(height: Insets.md),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _SelectedBeachCard(beach: selected),
+                      ),
+                    ],
+                    const SizedBox(height: Insets.sm),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: _Attribution(),
+                    ),
+                  ],
                 ),
-                if (selected != null) ...[
-                  const SizedBox(height: Insets.md),
-                  SizedBox(
-                    width: double.infinity,
-                    child: _SelectedBeachCard(beach: selected),
-                  ),
-                ],
-                const SizedBox(height: Insets.sm),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: _Attribution(),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -261,20 +323,21 @@ class _MapHeader extends StatelessWidget {
       top: Insets.lg,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: const Color(0xFF0B1B2C).withValues(alpha: 0.82),
           borderRadius: BorderRadius.circular(Radii.chip),
-          boxShadow: const [
-            BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2)),
-          ],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         ),
         child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: Insets.md, vertical: Insets.sm),
+          padding: EdgeInsets.symmetric(
+            horizontal: Insets.md,
+            vertical: Insets.sm,
+          ),
           child: Text(
             'Monitored Beaches',
             style: TextStyle(
               fontSize: 14.5,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF15242E),
+              color: Color(0xFFEAF2F8),
             ),
           ),
         ),
@@ -354,7 +417,9 @@ class _MapButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 22,
-              color: enabled ? const Color(0xFF15242E) : const Color(0xFFB3BEC6),
+              color: enabled
+                  ? const Color(0xFF15242E)
+                  : const Color(0xFFB3BEC6),
             ),
           ),
         ),
@@ -404,7 +469,10 @@ class _SelectedBeachCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     beach.region,
-                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF5B6B77)),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Color(0xFF5B6B77),
+                    ),
                   ),
                 ],
               ),
@@ -432,12 +500,12 @@ class _Attribution extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.all(Insets.xs),
-        child: Text(
-          'Boundaries: Natural Earth (India edition)',
-          style: TextStyle(fontSize: 9.5, color: Color(0xFF8A9AA5)),
-        ),
-      );
+    padding: EdgeInsets.all(Insets.xs),
+    child: Text(
+      'Terrain and boundaries: Natural Earth (India edition)',
+      style: TextStyle(fontSize: 9.5, color: Color(0x99CFE0EC)),
+    ),
+  );
 }
 
 class _MapMessage extends StatelessWidget {
@@ -454,12 +522,12 @@ class _MapMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.map_outlined, size: 40, color: Color(0xFF8A9AA5)),
+            const Icon(Icons.map_outlined, size: 40, color: Color(0xFF8FA8BC)),
             const SizedBox(height: Insets.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF5B6B77), fontSize: 15),
+              style: const TextStyle(color: Color(0xFFB9CCDA), fontSize: 15),
             ),
             const SizedBox(height: Insets.lg),
             FilledButton(onPressed: onRetry, child: const Text('Try again')),

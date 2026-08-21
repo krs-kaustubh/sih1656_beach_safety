@@ -1,6 +1,6 @@
 import 'package:beach_safety/core/theme/app_theme.dart';
 import 'package:beach_safety/data/mock_beach_repository.dart';
-import 'package:beach_safety/features/maps/india_geometry.dart';
+import 'package:beach_safety/features/maps/map_geometry.dart';
 import 'package:beach_safety/features/maps/map_projection.dart';
 import 'package:beach_safety/features/maps/maps_screen.dart';
 import 'package:beach_safety/state/providers.dart';
@@ -16,15 +16,15 @@ void main() {
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.reset);
 
-    late final IndiaGeometry geometry;
-    await tester.runAsync(() async => geometry = await IndiaGeometry.load());
+    late final MapGeometry geometry;
+    await tester.runAsync(() async => geometry = await MapGeometry.load());
 
     final container = ProviderContainer(
       overrides: [
         repositoryProvider.overrideWithValue(
           MockBeachRepository(latency: Duration.zero),
         ),
-        indiaGeometryProvider.overrideWith((ref) => geometry),
+        mapGeometryProvider.overrideWith((ref) => geometry),
       ],
     );
     addTearDown(container.dispose);
@@ -39,6 +39,25 @@ void main() {
     return container;
   }
 
+  /// Converts a map-space point into the screen point a tap must land on,
+  /// using whatever transform the map currently holds.
+  Offset screenPoint(WidgetTester tester, Offset scene) {
+    final viewer = tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    return MatrixUtils.transformPoint(
+      viewer.transformationController!.value,
+      scene,
+    );
+  }
+
+  bool enabled(WidgetTester tester, String tooltip) =>
+      tester
+          .widget<InkWell>(find.descendant(
+            of: find.byTooltip(tooltip),
+            matching: find.byType(InkWell),
+          ))
+          .onTap !=
+      null;
+
   testWidgets('renders the map and its controls', (tester) async {
     await pumpMap(tester);
 
@@ -48,51 +67,68 @@ void main() {
     expect(find.byTooltip('Fit India'), findsOneWidget);
   });
 
-  testWidgets('starts fully zoomed out, so zoom-out is disabled', (tester) async {
+  testWidgets('opens framed on India, not on the whole region', (tester) async {
     await pumpMap(tester);
 
-    final zoomOut = tester.widget<InkWell>(
-      find.descendant(
-        of: find.byTooltip('Zoom out'),
-        matching: find.byType(InkWell),
-      ),
-    );
-    expect(zoomOut.onTap, isNull);
+    final viewer = tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    final scale = viewer.transformationController!.value.getMaxScaleOnAxis();
 
-    final zoomIn = tester.widget<InkWell>(
-      find.descendant(
-        of: find.byTooltip('Zoom in'),
-        matching: find.byType(InkWell),
-      ),
-    );
-    expect(zoomIn.onTap, isNotNull);
+    // The mapped region runs well past India so the neighbours are reachable;
+    // the opening view zooms past that to frame India itself.
+    expect(scale, greaterThan(1.05));
+    expect(scale, lessThanOrEqualTo(12.0));
+
+    // Both directions are therefore available from the start.
+    expect(enabled(tester, 'Zoom in'), isTrue);
+    expect(enabled(tester, 'Zoom out'), isTrue);
   });
 
-  testWidgets('zooming in enables zoom-out, and reset returns to the fit',
+  testWidgets('zooming out past the India fit reaches the neighbours',
       (tester) async {
     await pumpMap(tester);
 
+    for (var i = 0; i < 4; i++) {
+      if (!enabled(tester, 'Zoom out')) break;
+      await tester.tap(find.byTooltip('Zoom out'));
+      await tester.pumpAndSettle();
+    }
+
+    final viewer = tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    expect(viewer.transformationController!.value.getMaxScaleOnAxis(),
+        closeTo(1.0, 0.01));
+    expect(enabled(tester, 'Zoom out'), isFalse);
+  });
+
+  testWidgets('Fit India returns to the opening framing', (tester) async {
+    await pumpMap(tester);
+
+    final opening = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value
+        .clone();
+
+    await tester.tap(find.byTooltip('Zoom in'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Zoom in'));
     await tester.pumpAndSettle();
 
-    final zoomOut = tester.widget<InkWell>(
-      find.descendant(
-        of: find.byTooltip('Zoom out'),
-        matching: find.byType(InkWell),
-      ),
-    );
-    expect(zoomOut.onTap, isNotNull, reason: 'zoom-out should now be available');
+    final zoomed = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value;
+    expect(zoomed.getMaxScaleOnAxis(),
+        greaterThan(opening.getMaxScaleOnAxis() + 0.5));
 
     await tester.tap(find.byTooltip('Fit India'));
     await tester.pumpAndSettle();
 
-    final afterReset = tester.widget<InkWell>(
-      find.descendant(
-        of: find.byTooltip('Zoom out'),
-        matching: find.byType(InkWell),
-      ),
-    );
-    expect(afterReset.onTap, isNull, reason: 'reset should restore the fit');
+    final restored = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value;
+    expect(restored.getMaxScaleOnAxis(),
+        closeTo(opening.getMaxScaleOnAxis(), 0.01));
   });
 
   testWidgets('tapping a marker selects that beach', (tester) async {
@@ -103,12 +139,13 @@ void main() {
     final marina = beaches.firstWhere((b) => b.id == 2);
 
     final projection = MapProjection.fit(
-      bounds: (await IndiaGeometry.load()).bounds,
+      bounds: (await MapGeometry.load()).region,
       size: surface,
     );
-    final target = projection.toCanvas(marina.longitude, marina.latitude);
-
-    await tester.tapAt(target);
+    await tester.tapAt(screenPoint(
+      tester,
+      projection.toCanvas(marina.longitude, marina.latitude),
+    ));
     await tester.pumpAndSettle();
 
     expect(container.read(selectedBeachIdProvider), marina.id);
@@ -123,10 +160,10 @@ void main() {
 
     // Well out in the Arabian Sea, away from every marker.
     final projection = MapProjection.fit(
-      bounds: (await IndiaGeometry.load()).bounds,
+      bounds: (await MapGeometry.load()).region,
       size: surface,
     );
-    await tester.tapAt(projection.toCanvas(69.5, 9.0));
+    await tester.tapAt(screenPoint(tester, projection.toCanvas(69.5, 9.0)));
     await tester.pumpAndSettle();
 
     expect(container.read(selectedBeachIdProvider), before);
@@ -139,10 +176,13 @@ void main() {
     final juhu = beaches.firstWhere((b) => b.id == 1);
 
     final projection = MapProjection.fit(
-      bounds: (await IndiaGeometry.load()).bounds,
+      bounds: (await MapGeometry.load()).region,
       size: surface,
     );
-    await tester.tapAt(projection.toCanvas(juhu.longitude, juhu.latitude));
+    await tester.tapAt(screenPoint(
+      tester,
+      projection.toCanvas(juhu.longitude, juhu.latitude),
+    ));
     await tester.pumpAndSettle();
 
     expect(find.text('Juhu Beach'), findsOneWidget);

@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 
-import 'india_geometry.dart';
+import 'map_geometry.dart';
 
 /// Maps lon/lat onto a canvas, fitting India's bounds inside [size] without
 /// distorting the aspect ratio.
@@ -65,6 +65,12 @@ class MapProjection {
       );
 
   Offset pointToCanvas(GeoPoint p) => toCanvas(p.longitude, p.latitude);
+
+  /// The canvas rectangle covering [bounds] under this projection.
+  Rect rectFor(GeoBounds bounds) => Rect.fromPoints(
+        toCanvas(bounds.west, bounds.north),
+        toCanvas(bounds.east, bounds.south),
+      );
 
   // Value equality so the painter can skip repaints when a rebuild produces
   // an identical projection.

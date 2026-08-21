@@ -3,10 +3,13 @@ library;
 
 import 'package:beach_safety/core/theme/app_theme.dart';
 import 'package:beach_safety/data/mock_beach_repository.dart';
-import 'package:beach_safety/features/maps/india_geometry.dart';
+import 'package:beach_safety/features/maps/map_geometry.dart';
 import 'package:beach_safety/features/maps/maps_screen.dart';
 import 'package:beach_safety/state/providers.dart';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,8 +23,14 @@ void main() {
 
     // rootBundle needs a real async pump, which pumpAndSettle cannot provide.
     // Load the outline up front and hand the provider the finished value.
-    late final IndiaGeometry geometry;
-    await tester.runAsync(() async => geometry = await IndiaGeometry.load());
+    late final MapGeometry geometry;
+    late final ui.Image terrain;
+    await tester.runAsync(() async {
+      geometry = await MapGeometry.load();
+      final data = await rootBundle.load('assets/geo/terrain.jpg');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      terrain = (await codec.getNextFrame()).image;
+    });
 
     await tester.pumpWidget(
       ProviderScope(
@@ -29,7 +38,8 @@ void main() {
           repositoryProvider.overrideWithValue(
             MockBeachRepository(latency: Duration.zero),
           ),
-          indiaGeometryProvider.overrideWith((ref) => geometry),
+          mapGeometryProvider.overrideWith((ref) => geometry),
+          terrainImageProvider.overrideWith((ref) => terrain),
         ],
         child: MaterialApp(theme: buildAppTheme(), home: const MapsScreen()),
       ),

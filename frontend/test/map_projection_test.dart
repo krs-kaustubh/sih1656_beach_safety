@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:beach_safety/features/maps/india_geometry.dart';
+import 'package:beach_safety/features/maps/map_geometry.dart';
 import 'package:beach_safety/features/maps/map_projection.dart';
 import 'package:flutter_test/flutter_test.dart';
 
