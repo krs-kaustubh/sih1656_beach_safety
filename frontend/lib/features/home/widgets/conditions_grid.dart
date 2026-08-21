@@ -66,24 +66,37 @@ class ConditionsGrid extends StatelessWidget {
 
     return Column(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: cards[0]),
-            const SizedBox(width: Insets.md),
-            Expanded(child: cards[1]),
-          ],
-        ),
+        _EqualHeightRow(left: cards[0], right: cards[1]),
         const SizedBox(height: Insets.md),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: cards[2]),
-            const SizedBox(width: Insets.md),
-            Expanded(child: cards[3]),
-          ],
-        ),
+        _EqualHeightRow(left: cards[2], right: cards[3]),
       ],
+    );
+  }
+}
+
+/// A pair of cards that share the taller one's height.
+///
+/// `CrossAxisAlignment.stretch` cannot do this inside a scrollable — the Row
+/// has no bounded height there, so stretching asks for an infinite one.
+/// [IntrinsicHeight] measures the taller child first and gives the Row a real
+/// height to stretch into.
+class _EqualHeightRow extends StatelessWidget {
+  const _EqualHeightRow({required this.left, required this.right});
+
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: left),
+          const SizedBox(width: Insets.md),
+          Expanded(child: right),
+        ],
+      ),
     );
   }
 }

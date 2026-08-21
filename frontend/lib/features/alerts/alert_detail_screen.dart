@@ -347,7 +347,10 @@ class _HappeningAndActions extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 380) {
+        // The designs pair these columns on a standard ~360dp phone, so the
+        // breakpoint sits below that and only stacks on genuinely small
+        // screens where two columns of prose would be unreadable.
+        if (constraints.maxWidth < 330) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [happening, const SizedBox(height: Insets.xl), actions],

@@ -1,0 +1,83 @@
+import 'package:beach_safety/core/theme/app_theme.dart';
+import 'package:beach_safety/data/mock_beach_repository.dart';
+import 'package:beach_safety/data/mock_data.dart';
+import 'package:beach_safety/features/alerts/alert_detail_screen.dart';
+import 'package:beach_safety/features/shell/app_shell.dart';
+import 'package:beach_safety/state/providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('Home renders the beach, risk banner and alerts', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositoryProvider.overrideWithValue(
+            MockBeachRepository(latency: Duration.zero),
+          ),
+        ],
+        child: MaterialApp(theme: buildAppTheme(), home: const AppShell()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Juhu Beach'), findsOneWidget);
+    expect(find.text('High Risk'), findsOneWidget);
+    expect(find.text('Wave Height'), findsOneWidget);
+    expect(find.text('Rip Current Warning'), findsOneWidget);
+  });
+
+  testWidgets('Alert detail renders every section', (tester) async {
+    // A tall surface: the detail screen stacks several panels and the designs
+    // put "what's happening" and "what to do" side by side above 380px.
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    final alert = MockData.alerts().first;
+
+    await tester.pumpWidget(
+      MaterialApp(theme: buildAppTheme(), home: AlertDetailScreen(alert: alert)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rip Current Warning'), findsOneWidget);
+    expect(find.text('RISK LEVEL'), findsOneWidget);
+    expect(find.text('LIFEGUARD STATUS'), findsOneWidget);
+    expect(find.text('Tower 3'), findsOneWidget);
+    expect(find.text('CURRENT CONDITIONS'), findsOneWidget);
+    expect(find.text("WHAT'S HAPPENING"), findsOneWidget);
+    expect(find.text('WHAT TO DO'), findsOneWidget);
+    // Severe alerts must show the urgency chip, not just the colour.
+    expect(find.text('SEVERE · ACT NOW'), findsOneWidget);
+  });
+
+  testWidgets('a beach with no alerts shows the safe empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositoryProvider.overrideWithValue(
+            MockBeachRepository(latency: Duration.zero),
+          ),
+          // Om Beach (id 4) is the low-risk beach carrying no alerts, which is
+          // what the low-risk Home design shows.
+          selectedBeachIdProvider.overrideWith(() => _FixedBeachId(4)),
+        ],
+        child: MaterialApp(theme: buildAppTheme(), home: const AppShell()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No Active Alerts'), findsOneWidget);
+  });
+}
+
+/// Pins the selected beach id for a test.
+class _FixedBeachId extends SelectedBeachId {
+  _FixedBeachId(this.id);
+  final int id;
+
+  @override
+  int? build() => id;
+}

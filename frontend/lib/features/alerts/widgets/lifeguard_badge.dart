@@ -27,12 +27,17 @@ class LifeguardBadge extends StatelessWidget {
           size: 26,
         ),
         const SizedBox(width: Insets.sm),
-        Column(
+        // Flexible, not fixed: "Tower 3" is short but a real tower name can be
+        // long, and this badge sits in a half-width column.
+        Flexible(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               status.towerName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
@@ -48,7 +53,8 @@ class LifeguardBadge extends StatelessWidget {
                 color: accent,
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ],
     );

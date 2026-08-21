@@ -75,6 +75,25 @@ abstract final class MockData {
             waterQuality: 'Excellent',
           ),
         ),
+        Beach(
+          id: 4,
+          name: 'Om Beach',
+          region: 'Gokarna, West Coast',
+          latitude: 14.5106,
+          longitude: 74.3170,
+          riskLevel: RiskLevel.low,
+          riskSummary: 'Conditions are safe for swimming and other water activities.',
+          conditions: Conditions(
+            waveHeightMeters: 0.5,
+            currentSpeedKnots: 0.6,
+            windSpeedKph: 9,
+            windDirection: 'W',
+            uvIndex: 2,
+            nextTide: TideInfo(time: _todayAt(10, 15), phase: TidePhase.low),
+            waterTempCelsius: 27,
+            waterQuality: 'Excellent',
+          ),
+        ),
       ];
 
   static const _ripCurrentActions = [

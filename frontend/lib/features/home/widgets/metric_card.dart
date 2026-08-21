@@ -57,14 +57,18 @@ class MetricCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: Insets.xs),
-                // Baseline-aligned so the small unit sits on the value's
-                // baseline instead of floating at its vertical centre.
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Flexible(
-                      child: Text(
+                // Scale the reading down rather than clipping it. Units vary
+                // a lot in length ("m" against "km/h SW", "Low" against
+                // "Very High"), and an ellipsised UV band would hide exactly
+                // the word that carries the warning.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
                         hasValue ? value! : '—',
                         style: AppText.metricValue.copyWith(
                           color: hasValue
@@ -72,23 +76,19 @@ class MetricCard extends StatelessWidget {
                               : risk.textSecondary,
                         ),
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (hasValue && unit != null) ...[
-                      const SizedBox(width: Insets.xs + 1),
-                      Flexible(
-                        child: Text(
+                      if (hasValue && unit != null) ...[
+                        const SizedBox(width: Insets.xs + 1),
+                        Text(
                           unit!,
                           style: AppText.metricUnit.copyWith(
                             color: valueColor ?? risk.textSecondary,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ],
             ),
