@@ -56,7 +56,7 @@ class ConditionsGrid extends ConsumerWidget {
         icon: Icons.wb_sunny_outlined,
         label: 'UV Index',
         value: uv == null ? null : fmt.uv(uv),
-        unit: conditions.uvBand?.label,
+        unit: conditions.uvLabel,
         valueColor: _uvColor(risk, conditions.uvBand),
         iconColor: _uvColor(risk, conditions.uvBand),
       ),

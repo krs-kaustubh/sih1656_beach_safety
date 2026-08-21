@@ -23,19 +23,29 @@ enum RiskLevel {
   /// Compact label used in the risk meter and status chips.
   final String shortLabel;
 
-  /// Parses a backend `safety_status`, falling back to [moderate] for values
-  /// we do not recognise.
+  /// The service speaks two vocabularies for the same idea: `/beaches` returns
+  /// `safety_status` as Green/Amber/Red, while `/beaches/{id}/weather` returns
+  /// `severity_mode` as Normal/Intermediate/Severe. Both are accepted here so
+  /// the mismatch stays in one place instead of leaking into the UI.
+  static const _aliases = <String, RiskLevel>{
+    'green': RiskLevel.low,
+    'normal': RiskLevel.low,
+    'amber': RiskLevel.moderate,
+    'yellow': RiskLevel.moderate,
+    'intermediate': RiskLevel.moderate,
+    'red': RiskLevel.high,
+    'severe': RiskLevel.high,
+  };
+
+  /// Parses a risk value from either vocabulary, falling back to [moderate]
+  /// for anything unrecognised.
   ///
   /// Failing "safe" here would be worse than failing cautious: an unknown
   /// status rendered as Low Risk could tell someone the water is fine when
   /// the backend was trying to say otherwise.
   static RiskLevel fromApi(String? value) {
     if (value == null) return RiskLevel.moderate;
-    final normalised = value.trim().toLowerCase();
-    for (final level in RiskLevel.values) {
-      if (level.apiValue.toLowerCase() == normalised) return level;
-    }
-    return RiskLevel.moderate;
+    return _aliases[value.trim().toLowerCase()] ?? RiskLevel.moderate;
   }
 
   /// Position on the Low - Moderate - Severe meter, from 0.0 to 1.0.

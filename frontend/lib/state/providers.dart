@@ -1,18 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/api_beach_repository.dart';
 import '../data/beach_repository.dart';
-import '../data/mock_beach_repository.dart';
 import '../models/beach.dart';
 import '../models/safety_alert.dart';
 import '../settings/settings_providers.dart';
 
-/// The single switch between mock and live data.
+/// The single switch between live and mock data.
 ///
-/// To go live, return an `ApiBeachRepository` here instead — no widget or model
-/// changes are required.
-final repositoryProvider = Provider<BeachRepository>(
-  (ref) => MockBeachRepository(),
-);
+/// Live by default. To demo without a running service, return a
+/// `MockBeachRepository()` here instead — no widget or model changes needed.
+///
+/// The base URL resolves per platform and can be overridden at build time:
+///   flutter run --dart-define=API_BASE_URL=http://192.168.1.5:8000
+final repositoryProvider = Provider<BeachRepository>((ref) {
+  final repository = ApiBeachRepository();
+  ref.onDispose(repository.dispose);
+  return repository;
+});
 
 /// All beaches, used by the search sheet.
 final beachesProvider = FutureProvider<List<Beach>>(

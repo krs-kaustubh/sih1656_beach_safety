@@ -63,6 +63,7 @@ class Conditions {
     this.nextTide,
     this.waterTempCelsius,
     this.waterQuality,
+    this.uvCategory,
   });
 
   final double waveHeightMeters;
@@ -79,7 +80,15 @@ class Conditions {
   /// is deliberately kept as a string rather than forced into an enum.
   final String? waterQuality;
 
+  /// The service's own UV wording, when it sends one. Preferred over the
+  /// locally derived band so the app never contradicts the service about how
+  /// dangerous the sun is.
+  final String? uvCategory;
+
   UvBand? get uvBand => uvIndex == null ? null : UvBand.fromIndex(uvIndex!);
+
+  /// What to print beside the UV number.
+  String? get uvLabel => uvCategory ?? uvBand?.label;
 
   /// Tolerant parser: unknown fields are ignored and missing fields become
   /// null rather than throwing, so a backend that grows new fields — or lags
@@ -97,6 +106,7 @@ class Conditions {
           : TideInfo.fromJson(json['next_tide'] as Map<String, dynamic>),
       waterTempCelsius: asDouble(json['water_temp_celsius']),
       waterQuality: json['water_quality'] as String?,
+      uvCategory: json['uv_category'] as String?,
     );
   }
 
@@ -108,6 +118,7 @@ class Conditions {
     TideInfo? nextTide,
     double? waterTempCelsius,
     String? waterQuality,
+    String? uvCategory,
   }) =>
       Conditions(
         waveHeightMeters: waveHeightMeters ?? this.waveHeightMeters,
@@ -118,5 +129,6 @@ class Conditions {
         nextTide: nextTide ?? this.nextTide,
         waterTempCelsius: waterTempCelsius ?? this.waterTempCelsius,
         waterQuality: waterQuality ?? this.waterQuality,
+        uvCategory: uvCategory ?? this.uvCategory,
       );
 }

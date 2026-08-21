@@ -322,6 +322,13 @@ class _HappeningAndActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The live service sends alerts without guidance text — only a type, a
+    // title, a time and a scope. Rendering the headings anyway would leave
+    // "WHAT TO DO" standing over nothing.
+    final hasHappening = alert.whatsHappening.trim().isNotEmpty;
+    final hasActions = alert.whatToDo.isNotEmpty;
+    if (!hasHappening && !hasActions) return const SizedBox.shrink();
+
     final happening = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -355,6 +362,9 @@ class _HappeningAndActions extends StatelessWidget {
           ),
       ],
     );
+
+    if (!hasActions) return happening;
+    if (!hasHappening) return actions;
 
     return LayoutBuilder(
       builder: (context, constraints) {

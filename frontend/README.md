@@ -7,32 +7,67 @@ from the same codebase.
 > The `backend/` directory is owned by another track of this project and is not
 > modified from this branch.
 
-## Backend contract (as of `f8441d9`)
+## Backend contract
 
-Base URL: `http://<host>:8000`
+The client talks to two endpoints and combines them:
 
-| Method | Path            | Response                                   |
-| ------ | --------------- | ------------------------------------------ |
-| GET    | `/health`       | `{"status": "ok"}`                         |
-| GET    | `/beaches`      | `{"beaches": [Beach, ...]}`                |
-| GET    | `/beaches/{id}` | `Beach`, or `404` with a `detail` message  |
+| Endpoint | Carries |
+| -------- | ------- |
+| `GET /beaches` | The roster: `id`, `name`, coordinates. Its `safety_status` comes from static fixtures. |
+| `GET /beaches/{slug}/weather` | The live reading: risk, conditions and alerts. |
 
-`Beach`:
+`ApiBeachRepository` fetches the roster, then enriches every beach with its
+live reading in parallel. **The live risk always overrides the roster's
+`safety_status`**, which is fixture data.
 
-| Field                 | Type   | Notes                          |
-| --------------------- | ------ | ------------------------------ |
-| `id`                  | int    |                                |
-| `name`                | string | e.g. "Juhu Beach, Mumbai"      |
-| `latitude`            | double |                                |
-| `longitude`           | double |                                |
-| `wave_height_meters`  | double |                                |
-| `current_speed_knots` | double |                                |
-| `water_quality`       | string | "Excellent" / "Moderate" / "Poor" — free-form today |
-| `safety_status`       | enum   | `Green` \| `Amber` \| `Red`    |
+Three mismatches are absorbed in the client rather than leaking into the UI:
 
-Data is currently mock (3 beaches) served from `backend/services/mock_data.py`.
-The shape is stable enough to build against; treat `water_quality` as an
-open string and `safety_status` as a closed enum with an unknown fallback.
+- **Two severity vocabularies.** The roster says `Green|Amber|Red`; the weather
+  endpoint says `Normal|Intermediate|Severe`. `RiskLevel.fromApi` accepts both.
+  Anything unrecognised still resolves to Moderate, never Low.
+- **Two beach identifiers.** The roster keys on an integer id, the weather
+  endpoint on a slug from a fixed enum. Nothing in the API connects them, so
+  `ApiBeachRepository.slugFor` derives it from the name — "Juhu Beach, Mumbai"
+  gives "juhu". **This is the weakest link** and breaks on the first beach whose
+  slug is not its first word. The real fix is for `/beaches` to return the slug.
+  A wrong guess degrades that beach to fixture data rather than erroring.
+- **Bare tide times.** `next_tide_time` is a wall clock ("14:15") with no date.
+  It is anchored to the reading's day and rolled forward if that would put it in
+  the past, because the *next* tide cannot already have happened.
+
+The service's alerts are much thinner than the designs: a type, a title, a time
+and a scope, with no per-alert severity and no guidance text. Severity is
+inherited from the beach, and the detail screen hides the guidance sections
+rather than printing headings over nothing.
+
+## Running against the service
+
+```bash
+cd backend
+USE_MOCK_DATA=false .venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+`--host 0.0.0.0` matters: a phone cannot reach `127.0.0.1`. The client resolves
+its base URL per platform — `10.0.2.2` on the Android emulator, `127.0.0.1` on
+the iOS simulator — and a real device needs the machine's LAN address:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://192.168.1.5:8000
+```
+
+To demo with no service running, return a `MockBeachRepository()` from
+`repositoryProvider` in `lib/state/providers.dart`.
+
+`USE_MOCK_DATA` in `backend/.env` picks what the service itself serves. Its mock
+engine produces deliberately extreme values, which exercise the red/severe UI;
+live providers return whatever the sea is actually doing, which is usually calm.
+
+There is an integration test that runs the real client against a running
+service:
+
+```bash
+flutter test --run-skipped -t live test/api_integration_test.dart
+```
 
 ## Planned structure
 
