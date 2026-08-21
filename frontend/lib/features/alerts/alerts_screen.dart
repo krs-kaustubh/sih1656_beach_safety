@@ -7,7 +7,7 @@ import '../../models/beach.dart';
 import '../../models/risk_level.dart';
 import '../../models/safety_alert.dart';
 import '../../state/providers.dart';
-import '../../widgets/risk_backdrop.dart';
+import '../../widgets/severity_backdrop.dart';
 import '../home/widgets/active_alerts_section.dart';
 import 'alert_detail_screen.dart';
 
@@ -23,11 +23,15 @@ class AlertsScreen extends ConsumerWidget {
     final beach = beachAsync.value;
     // Before the beach resolves there is no risk level to theme from; low
     // keeps the backdrop calm rather than flashing red during a load.
-    final risk = RiskTheme.forLevel(beach?.riskLevel ?? RiskLevel.low);
+    //
+    // The light variant is deliberate: this tab is a list of warnings to be
+    // read, so it takes a severity tint and dark text rather than the Home
+    // tab's photograph and white text.
+    final risk = RiskTheme.forLevel(beach?.riskLevel ?? RiskLevel.low).lightVariant;
 
     return RiskThemeScope(
       theme: risk,
-      child: RiskBackdrop(
+      child: SeverityBackdrop(
         child: SafeArea(
           bottom: false,
           child: RefreshIndicator(
@@ -53,7 +57,7 @@ class AlertsScreen extends ConsumerWidget {
                           .toString()
                           .replaceFirst('BeachRepositoryException: ', ''),
                       onRetry: () => ref.invalidate(beachesProvider),
-                      color: risk.headerForeground,
+                      color: risk.contentForeground,
                     ),
                   _ => const Padding(
                       padding: EdgeInsets.symmetric(vertical: Insets.xxl),

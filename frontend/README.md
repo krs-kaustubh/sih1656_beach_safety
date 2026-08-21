@@ -110,6 +110,17 @@ fills the frame while the image decodes and stands in if an asset is ever
 missing, so a failed load degrades to something deliberate rather than to a
 blank rectangle.
 
+## Alerts tab
+
+The Alerts tab sits on a light severity gradient — green, amber or red fading
+to near-white — rather than the Home tab's photograph. It is a list of warnings
+to be read, so the tint carries the severity at a glance while the text stays
+on a calm ground.
+
+`RiskTheme.lightVariant` supplies the matching palette: light surfaces and dark
+text even at high risk. Because it is a variant of the same object, the shared
+alert widgets need no changes — they still just read `RiskTheme.of(context)`.
+
 ## Maps tab
 
 A dark terrain map of India and its neighbours, rendered from bundled assets —

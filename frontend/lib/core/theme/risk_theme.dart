@@ -74,7 +74,7 @@ class RiskTheme {
 
   final bool isDark;
 
-  Color get onBackdropMuted => headerForeground.withValues(alpha: 0.78);
+  Color get onBackdropMuted => headerForeground.withValues(alpha: 0.72);
 
   static const RiskTheme _low = RiskTheme(
     level: RiskLevel.low,
@@ -153,6 +153,86 @@ class RiskTheme {
         (RiskLevel.high, false) => const Color(0xFFC02A30),
         (RiskLevel.high, true) => const Color(0xFFE5484D),
       };
+
+  /// Light counterpart of this palette, used where the screen sits on a tinted
+  /// gradient rather than a photograph.
+  ///
+  /// The Alerts tab needs the severity to read at a glance without a
+  /// photographic backdrop competing with it, which means light surfaces and
+  /// dark text even at high risk. Keeping it as a variant of the same object
+  /// means the shared alert widgets need no changes — they still just read
+  /// `RiskTheme.of(context)`.
+  RiskTheme get lightVariant => switch (level) {
+        RiskLevel.low => _lowLight,
+        RiskLevel.moderate => _moderateLight,
+        RiskLevel.high => _highLight,
+      };
+
+  static const RiskTheme _lowLight = RiskTheme(
+    level: RiskLevel.low,
+    backdrop: [Color(0xFFD8F0DE), Color(0xFFEAF7ED), Color(0xFFF6FBF7), Color(0xFFFFFFFF)],
+    bannerGradient: [Color(0xFF3AA76D), Color(0xFF12796F)],
+    bannerForeground: Colors.white,
+    bannerIconBackground: Color(0x33FFFFFF),
+    surface: Color(0xFFFFFFFF),
+    surfaceBorder: Color(0x14000000),
+    textPrimary: Color(0xFF14261C),
+    textSecondary: Color(0xFF5A6B60),
+    accent: Color(0xFF1B7F4F),
+    metricIcon: Color(0xFF1E5A8A),
+    headerForeground: Color(0xFF10301F),
+    contentForeground: Color(0xFF10301F),
+    backdropAsset: 'assets/backdrops/low.jpg',
+    detailHeader: Color(0xFF0E4F4A),
+    detailBackdrop: Color(0xFF07242B),
+    detailSurface: Color(0xFFFFFFFF),
+    isDark: false,
+  );
+
+  static const RiskTheme _moderateLight = RiskTheme(
+    level: RiskLevel.moderate,
+    backdrop: [Color(0xFFFCE7C6), Color(0xFFFDF2DF), Color(0xFFFEF9F0), Color(0xFFFFFFFF)],
+    bannerGradient: [Color(0xFFF7AC24), Color(0xFFE8901A)],
+    bannerForeground: Color(0xFF3D2400),
+    bannerIconBackground: Color(0x33000000),
+    surface: Color(0xFFFFFFFF),
+    surfaceBorder: Color(0x14000000),
+    textPrimary: Color(0xFF2B1E08),
+    textSecondary: Color(0xFF6F5C3E),
+    accent: Color(0xFFC9720C),
+    metricIcon: Color(0xFF23557F),
+    headerForeground: Color(0xFF4A3208),
+    contentForeground: Color(0xFF4A3208),
+    backdropAsset: 'assets/backdrops/moderate.jpg',
+    detailHeader: Color(0xFFE08A0B),
+    detailBackdrop: Color(0xFF3A2405),
+    detailSurface: Color(0xFFFFFAF1),
+    isDark: false,
+  );
+
+  static const RiskTheme _highLight = RiskTheme(
+    level: RiskLevel.high,
+    backdrop: [Color(0xFFF9D8D8), Color(0xFFFCE8E8), Color(0xFFFEF4F4), Color(0xFFFFFFFF)],
+    bannerGradient: [Color(0xFFB3202B), Color(0xFF7E1119)],
+    bannerForeground: Colors.white,
+    bannerIconBackground: Color(0x33FFFFFF),
+    surface: Color(0xFFFFFFFF),
+    surfaceBorder: Color(0x14000000),
+    textPrimary: Color(0xFF2A1416),
+    textSecondary: Color(0xFF6E585A),
+    accent: Color(0xFFC02A30),
+    metricIcon: Color(0xFF8A4045),
+    headerForeground: Color(0xFF4A1114),
+    contentForeground: Color(0xFF4A1114),
+    backdropAsset: 'assets/backdrops/high.jpg',
+    detailHeader: Color(0xFF8E1420),
+    detailBackdrop: Color(0xFF120A0C),
+    detailSurface: Color(0xFF1A1113),
+    // Light, despite the risk level: isDark describes the surfaces, and
+    // everything downstream picks contrast from it. Marking this dark would
+    // hand white alert cards the light-on-dark red meant for the storm screen.
+    isDark: false,
+  );
 
   static RiskTheme forLevel(RiskLevel level) => switch (level) {
         RiskLevel.low => _low,
