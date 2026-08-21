@@ -1,0 +1,12 @@
+# Launch screen for both platforms.
+#   dart run flutter_native_splash:create
+#
+# Navy to match the app icon, so launching does not flash white before the
+# first frame.
+flutter_native_splash:
+  color: "#01214E"
+  image: assets/branding/icon_foreground.png
+  android_12:
+    color: "#01214E"
+    image: assets/branding/icon_foreground.png
+    icon_background_color: "#01214E"
