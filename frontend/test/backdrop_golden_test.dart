@@ -6,6 +6,7 @@ import 'package:beach_safety/data/mock_beach_repository.dart';
 import 'package:beach_safety/features/shell/app_shell.dart';
 import 'package:beach_safety/state/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +25,16 @@ void main() {
       tester.view.devicePixelRatio = 3.0;
       addTearDown(tester.view.reset);
 
+      // Image.asset decodes asynchronously. Without a real async pump the
+      // photo is still undecoded when the golden is captured, and only the
+      // painted fallback would be recorded.
+      await tester.runAsync(() async {
+        final data = await rootBundle.load(
+          'assets/backdrops/${name.split('_').first}.jpg',
+        );
+        await decodeImageFromList(data.buffer.asUint8List());
+      });
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -35,6 +46,10 @@ void main() {
           child: MaterialApp(theme: buildAppTheme(), home: const AppShell()),
         ),
       );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() => Future<void>.delayed(
+            const Duration(milliseconds: 120),
+          ));
       await tester.pumpAndSettle();
 
       await expectLater(

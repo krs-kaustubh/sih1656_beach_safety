@@ -84,20 +84,31 @@ the last successful response, app icon and splash.
 
 ## Backdrops
 
-The designs put a photograph behind Home — clear day, sunset, storm — one per
-risk level. `BackdropScenePainter` draws those three moods procedurally: no
-asset weight, correct at any screen size, and tinted from the same palette as
-the rest of the screen.
+Home sits on a photograph per risk level, held in `assets/backdrops/` and named
+in `RiskTheme.backdropAsset`:
 
-To use real photographs instead, drop them in `assets/backdrops/`, declare the
-directory in `pubspec.yaml`, and pass the path:
+| Risk     | Asset                            | Scene      |
+| -------- | -------------------------------- | ---------- |
+| Low      | `assets/backdrops/low.jpg`       | Clear day  |
+| Moderate | `assets/backdrops/moderate.jpg`  | Sunset     |
+| High     | `assets/backdrops/high.jpg`      | Storm      |
 
-```dart
-RiskBackdrop(imageAsset: 'assets/backdrops/storm.jpg', child: ...)
-```
+To change one, replace the file — no code edit needed. `RiskBackdrop` also
+takes an `imageAsset` override for a one-off.
 
-`RiskBackdrop` then swaps the painted scene for the image and keeps the same
-fade, so the cards below do not lose contrast.
+Two layers sit over the photo and matter if you swap in a different image:
+
+- A **top scrim** darkens roughly the first third. The beach name, region and
+  search field are white, and a photo's sky can be bright anywhere, so this
+  guarantees contrast rather than depending on the chosen image.
+- A **fade** dissolves the photo into the page colour between 30% and 78% of
+  the height. It finishes above the "Active Alerts" heading so that text never
+  lands on open water, while leaving the surf visible behind the metric cards.
+
+`BackdropScenePainter` draws an equivalent scene procedurally underneath. It
+fills the frame while the image decodes and stands in if an asset is ever
+missing, so a failed load degrades to something deliberate rather than to a
+blank rectangle.
 
 ## Visual checks
 

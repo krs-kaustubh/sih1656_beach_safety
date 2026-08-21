@@ -24,6 +24,7 @@ class RiskTheme {
     required this.metricIcon,
     required this.headerForeground,
     required this.contentForeground,
+    required this.backdropAsset,
     required this.detailHeader,
     required this.detailBackdrop,
     required this.detailSurface,
@@ -58,6 +59,10 @@ class RiskTheme {
   /// pale surface and [headerForeground] would be nearly invisible.
   final Color contentForeground;
 
+  /// Photograph behind Home for this risk level. `BackdropScenePainter` draws
+  /// the equivalent scene if the asset cannot be loaded.
+  final String backdropAsset;
+
   /// Solid header block at the top of the alert detail screen.
   final Color detailHeader;
 
@@ -85,6 +90,7 @@ class RiskTheme {
     metricIcon: Color(0xFF1E5A8A),
     headerForeground: Colors.white,
     contentForeground: Color(0xFF15242E),
+    backdropAsset: 'assets/backdrops/low.jpg',
     detailHeader: Color(0xFF0E4F4A),
     detailBackdrop: Color(0xFF07242B),
     detailSurface: Color(0xFFFFFFFF),
@@ -105,6 +111,7 @@ class RiskTheme {
     metricIcon: Color(0xFF23557F),
     headerForeground: Colors.white,
     contentForeground: Color(0xFF2B1A05),
+    backdropAsset: 'assets/backdrops/moderate.jpg',
     detailHeader: Color(0xFFE08A0B),
     detailBackdrop: Color(0xFF3A2405),
     detailSurface: Color(0xFFFFFAF1),
@@ -125,6 +132,7 @@ class RiskTheme {
     metricIcon: Color(0xFFD8CFD1),
     headerForeground: Colors.white,
     contentForeground: Colors.white,
+    backdropAsset: 'assets/backdrops/high.jpg',
     detailHeader: Color(0xFF8E1420),
     detailBackdrop: Color(0xFF120A0C),
     detailSurface: Color(0xFF1A1113),
