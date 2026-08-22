@@ -28,10 +28,10 @@ _PLACEHOLDERS: Dict[LocationEnum, Dict[str, Any]] = {
         "safety_status": "Amber",
     },
     LocationEnum.RADHANAGAR: {
-        "wave_height_meters": 0.6,
-        "current_speed_knots": 0.8,
+        "wave_height_meters": 4.9,
+        "current_speed_knots": 2.9,
         "water_quality": "Excellent",
-        "safety_status": "Green",
+        "safety_status": "Red",
     },
 }
 

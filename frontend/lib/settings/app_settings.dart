@@ -97,6 +97,7 @@ class AppSettings {
     this.timeFormat = TimeFormat.twelveHour,
     this.alertFilter = AlertSeverityFilter.all,
     this.defaultBeachId,
+    this.whatsappNumber = '',
   });
 
   final DistanceUnit waveHeightUnit;
@@ -108,6 +109,10 @@ class AppSettings {
   /// Beach shown on launch. Null means "whichever the backend lists first".
   final int? defaultBeachId;
 
+  /// WhatsApp chat id for safety alerts, e.g. "919876543210@c.us". Empty
+  /// means the user hasn't opted in yet.
+  final String whatsappNumber;
+
   static const defaults = AppSettings();
 
   AppSettings copyWith({
@@ -118,6 +123,7 @@ class AppSettings {
     AlertSeverityFilter? alertFilter,
     int? defaultBeachId,
     bool clearDefaultBeach = false,
+    String? whatsappNumber,
   }) =>
       AppSettings(
         waveHeightUnit: waveHeightUnit ?? this.waveHeightUnit,
@@ -127,6 +133,7 @@ class AppSettings {
         alertFilter: alertFilter ?? this.alertFilter,
         defaultBeachId:
             clearDefaultBeach ? null : (defaultBeachId ?? this.defaultBeachId),
+        whatsappNumber: whatsappNumber ?? this.whatsappNumber,
       );
 
   @override
@@ -137,9 +144,11 @@ class AppSettings {
       other.temperatureUnit == temperatureUnit &&
       other.timeFormat == timeFormat &&
       other.alertFilter == alertFilter &&
-      other.defaultBeachId == defaultBeachId;
+      other.defaultBeachId == defaultBeachId &&
+      other.whatsappNumber == whatsappNumber;
 
   @override
   int get hashCode => Object.hash(waveHeightUnit, windSpeedUnit,
-      temperatureUnit, timeFormat, alertFilter, defaultBeachId);
+      temperatureUnit, timeFormat, alertFilter, defaultBeachId,
+      whatsappNumber);
 }

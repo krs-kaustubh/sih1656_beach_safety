@@ -45,6 +45,9 @@ class SettingsController extends Notifier<AppSettings> {
         ),
       );
 
+  Future<void> setWhatsappNumber(String number) =>
+      _update(state.copyWith(whatsappNumber: number));
+
   Future<void> resetToDefaults() => _update(AppSettings.defaults);
 }
 

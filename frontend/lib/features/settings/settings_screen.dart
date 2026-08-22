@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/whatsapp_alert_service.dart';
 import '../../settings/app_settings.dart';
 import '../../settings/settings_providers.dart';
 import '../../state/providers.dart';
@@ -121,6 +122,14 @@ class SettingsScreen extends ConsumerWidget {
                     onChanged: controller.setDefaultBeach,
                   ),
               ],
+            ),
+
+            _Section(
+              title: 'WhatsApp safety alerts',
+              footnote: 'Sends a test message via the beach safety backend. '
+                  'The alert only fires if the beach is currently at '
+                  'elevated risk.',
+              children: const [_WhatsAppAlertRow()],
             ),
 
             _Section(
@@ -392,6 +401,163 @@ class _RadioRow<T> extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Phone number field + beach picker + send button for the WhatsApp
+/// safety-alert test. Persists the number via [SettingsController]; the
+/// beach selection is local, since it's just which slug to test against.
+class _WhatsAppAlertRow extends ConsumerStatefulWidget {
+  const _WhatsAppAlertRow();
+
+  @override
+  ConsumerState<_WhatsAppAlertRow> createState() => _WhatsAppAlertRowState();
+}
+
+class _WhatsAppAlertRowState extends ConsumerState<_WhatsAppAlertRow> {
+  late final TextEditingController _numberController;
+  WhatsAppAlertBeach _selectedBeach = whatsAppAlertBeaches.first;
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _numberController = TextEditingController(
+      text: ref.read(settingsProvider).whatsappNumber,
+    );
+  }
+
+  @override
+  void dispose() {
+    _numberController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final chatId = _numberController.text.trim();
+    if (chatId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a WhatsApp number first.')),
+      );
+      return;
+    }
+
+    await ref.read(settingsProvider.notifier).setWhatsappNumber(chatId);
+
+    setState(() => _sending = true);
+    try {
+      final result = await WhatsAppAlertService().checkSafety(
+        beach: _selectedBeach,
+        chatId: chatId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.alerted
+                ? 'Alert sent — ${result.riskTitle} (${result.severityMode})'
+                : 'No alert sent — ${_selectedBeach.label} is not at '
+                    'elevated risk right now (${result.severityMode}).',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not reach the backend: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Insets.md,
+        vertical: Insets.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'WhatsApp number',
+            style: TextStyle(fontSize: 13, color: SettingsScreen._muted),
+          ),
+          const SizedBox(height: Insets.xs),
+          TextField(
+            controller: _numberController,
+            keyboardType: TextInputType.phone,
+            style: const TextStyle(color: SettingsScreen._text, fontSize: 15),
+            decoration: InputDecoration(
+              hintText: '919876543210@c.us',
+              hintStyle: const TextStyle(color: SettingsScreen._muted),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: Insets.sm,
+                vertical: Insets.sm,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Radii.chip),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: Insets.md),
+          const Text(
+            'Beach',
+            style: TextStyle(fontSize: 13, color: SettingsScreen._muted),
+          ),
+          const SizedBox(height: Insets.xs),
+          DropdownButtonFormField<WhatsAppAlertBeach>(
+            initialValue: _selectedBeach,
+            dropdownColor: SettingsScreen._surface,
+            style: const TextStyle(color: SettingsScreen._text, fontSize: 15),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: Insets.sm,
+                vertical: Insets.sm,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Radii.chip),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: [
+              for (final beach in whatsAppAlertBeaches)
+                DropdownMenuItem(value: beach, child: Text(beach.label)),
+            ],
+            onChanged: (beach) {
+              if (beach != null) setState(() => _selectedBeach = beach);
+            },
+          ),
+          const SizedBox(height: Insets.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _sending ? null : _send,
+              style: FilledButton.styleFrom(
+                backgroundColor: SettingsScreen._accent,
+              ),
+              child: _sending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Send test alert'),
+            ),
+          ),
+        ],
       ),
     );
   }

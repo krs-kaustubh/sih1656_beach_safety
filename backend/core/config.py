@@ -76,13 +76,6 @@ class ProviderAPISettings(BaseSettings):
             return self.OPENWEATHER_API_KEY
         return self.OPENWEATHER_KEY.get_secret_value()
 
-<<<<<<< HEAD
-class WAHASettings(BaseSettings):
-    BASE_URL: str = "http://localhost:3000"
-    API_KEY: str = ""
-    SESSION: str = "default"
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="WAHA_", extra="ignore")
-=======
     def get_llm_key(self) -> Optional[str]:
         """Key for the risk model, from .env or the process environment."""
         import os
@@ -93,7 +86,20 @@ class WAHASettings(BaseSettings):
             or os.getenv("GROQ_API_KEY")
             or os.getenv("OPENAI_API_KEY")
         )
->>>>>>> 62977fc4035a5dd55ead80e8d0dbeb2ee3e75a40
+
+
+class WAHASettings(BaseSettings):
+    """WAHA (WhatsApp HTTP API) gateway connection settings."""
+    BASE_URL: str = "http://localhost:3000"
+    API_KEY: str = ""
+    SESSION: str = "default"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="WAHA_",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 class Settings(BaseSettings):
@@ -106,5 +112,6 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
 
 settings = Settings()

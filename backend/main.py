@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-
-from core.config import settings
+from fastapi.middleware.cors import CORSMiddleware
 from api.beach_routes import router as beach_router
 
 app = FastAPI(
@@ -8,26 +7,22 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Chrome/web blocks cross-origin fetches by default; the Flutter web build
+# runs on its own dev-server origin (not 127.0.0.1:8000), so without this
+# every request from `flutter run -d chrome` fails as "Failed to fetch"
+# even though the backend itself is healthy. Wide open for local dev —
+# tighten allow_origins before any real deployment.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(beach_router)
 
 
 @app.get("/health")
 def health_check():
-    """Readiness, and which sources are actually configured.
-
-    Worth checking before a demo: a missing model key or a mock-data flag
-    looks identical to a working system from the outside, and this is the
-    quickest way to tell them apart.
-    """
-    providers = settings.providers
-    return {
-        "status": "ok",
-        "live_weather": not settings.demo.USE_MOCK_DATA,
-        "risk_engine": "ai" if providers.get_llm_key() else "rules",
-        "providers": {
-            "tomorrow_io": bool(providers.get_tomorrow_key()),
-            "openweather": bool(providers.get_openweather_key()),
-            "risk_model": bool(providers.get_llm_key()),
-        },
-    }
-
+    return {"status": "ok"}
