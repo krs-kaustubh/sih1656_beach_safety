@@ -67,16 +67,22 @@ class ProviderAPISettings(BaseSettings):
             return self.OPENWEATHER_API_KEY
         return self.OPENWEATHER_KEY.get_secret_value()
 
+class WAHASettings(BaseSettings):
+    BASE_URL: str = "http://localhost:3000"
+    API_KEY: str = ""
+    SESSION: str = "default"
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="WAHA_", extra="ignore")
+
 
 class Settings(BaseSettings):
     demo: DemoSettings = DemoSettings()
     providers: ProviderAPISettings = ProviderAPISettings()
+    waha: WAHASettings = WAHASettings()
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
-
 
 settings = Settings()
