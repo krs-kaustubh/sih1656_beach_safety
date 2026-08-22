@@ -8,12 +8,18 @@ import '../models/risk_level.dart';
 import '../settings/app_settings.dart';
 import '../settings/settings_providers.dart';
 import '../state/providers.dart';
+import '../widgets/home_widget_service.dart';
 import 'alert_dispatcher.dart';
 import 'escalation.dart';
 
 // Overridden in tests with a recording dispatcher.
 final alertDispatcherProvider =
     Provider<AlertDispatcher>((ref) => ChannelAlertDispatcher());
+
+// Publishes the selected beach to the Android home screen widget.
+final homeWidgetServiceProvider = Provider<HomeWidgetService>(
+  (ref) => const HomeWidgetService(),
+);
 
 // Remembers the last rating seen per beach for the life of the app.
 final escalationTrackerProvider = Provider<EscalationTracker>(
@@ -35,6 +41,14 @@ class EscalationWatcher extends Notifier<RiskLevel?> {
       final beach = next.value;
       if (beach == null) return;
       state = beach.riskLevel;
+
+      // The widget mirrors whatever the app last saw, so it is refreshed on
+      // every reading rather than only on an escalation.
+      ref.read(homeWidgetServiceProvider).publish(
+            beach,
+            ref.read(formatterProvider),
+          );
+
       _handle(beach);
     });
 

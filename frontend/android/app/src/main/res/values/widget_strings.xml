@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lehar</string>
+    <string name="widget_description">Current beach safety rating and conditions.</string>
+    <string name="widget_hero_description">Beach conditions photograph</string>
+    <string name="widget_no_data">Open Lehar</string>
+</resources>
