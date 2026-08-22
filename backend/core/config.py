@@ -60,6 +60,12 @@ class ProviderAPISettings(BaseSettings):
     GROQ_MODEL: Optional[str] = None
     GROQ_API_BASE_URL: Optional[str] = None
 
+    # Budget for the model call. Measured round trips on Groq are around 1.3s
+    # for the 20b model and 2.3s for the 120b, so the old 800ms ceiling meant
+    # every call timed out and the rules engine always won — the model was
+    # wired in but could never actually answer.
+    RISK_MODEL_TIMEOUT_SECONDS: float = 2.5
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -12,8 +12,10 @@ SYSTEM_PROMPT = """Role: Ocean Safety AI Expert for Indian Coastal Tourism.
 Task: Analyze ocean/meteorological parameters and categorize the risk level into one of: NORMAL, INTERMEDIATE_LOW, INTERMEDIATE_MED, INTERMEDIATE_HIGH, SEVERE.
 Output Format: Must strictly adhere to the requested JSON schema."""
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
-TIMEOUT_SECONDS = 0.8  # 800ms timeout
+# llama-3.3-70b-versatile was decommissioned and now 404s. gpt-oss-20b is the
+# fastest chat model Groq currently serves and grades the reference cases
+# correctly; override with GROQ_MODEL in .env.
+DEFAULT_MODEL = "openai/gpt-oss-20b"
 
 # Ordered least to most hazardous, so two assessments can be compared.
 SEVERITY_ORDER: List[SeverityMode] = [
@@ -337,8 +339,9 @@ async def evaluate_risk(
         location_name=location_name,
     )
 
+    timeout = settings.providers.RISK_MODEL_TIMEOUT_SECONDS
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(endpoint_url, headers=headers, json=body)
             response.raise_for_status()
             data = response.json()
@@ -346,7 +349,9 @@ async def evaluate_risk(
             parsed_json = json.loads(raw_content)
             assessment = RiskAssessmentResponse.model_validate(parsed_json)
     except httpx.TimeoutException:
-        logger.warning("LLM risk assessment timed out (>800ms). Using rules engine.")
+        logger.warning(
+            f"LLM risk assessment timed out (>{timeout}s). Using rules engine."
+        )
         return rules
     except Exception as exc:
         logger.warning(

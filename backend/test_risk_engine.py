@@ -201,9 +201,16 @@ class TestEvaluateRisk:
 
     def test_uses_rules_when_no_key_is_configured(self, monkeypatch):
         import asyncio
+        from core.config import settings
         from services.risk_engine import evaluate_risk
+
+        # The settings singleton has already read .env, so clearing the
+        # environment is not enough to simulate an unconfigured deployment.
         monkeypatch.delenv("GROQ_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setattr(settings.providers, "GROQ_API_KEY", None)
+        monkeypatch.setattr(settings.providers, "OPENAI_API_KEY", None)
+
         r = asyncio.run(evaluate_risk(**CALM, location_name="Juhu"))
         assert r.source == "rules"
 
@@ -218,7 +225,11 @@ class TestKeyResolution:
 
     def test_reads_the_key_from_settings(self, monkeypatch):
         from core.config import ProviderAPISettings
-        providers = ProviderAPISettings(GROQ_API_KEY="gsk_from_env_file")
+        # _env_file=None keeps the developer's real .env out of the test, which
+        # otherwise both breaks the assertion and prints a live key on failure.
+        providers = ProviderAPISettings(
+            _env_file=None, GROQ_API_KEY="gsk_from_env_file"
+        )
         assert providers.get_llm_key() == "gsk_from_env_file"
 
     def test_falls_back_to_the_process_environment(self, monkeypatch):
@@ -227,9 +238,10 @@ class TestKeyResolution:
         providers = ProviderAPISettings(_env_file=None)
         assert providers.get_llm_key() == "gsk_from_shell"
 
-    def test_accepts_an_openai_key_too(self):
+    def test_accepts_an_openai_key_too(self, monkeypatch):
         from core.config import ProviderAPISettings
-        providers = ProviderAPISettings(OPENAI_API_KEY="sk_openai")
+        monkeypatch.delenv("GROQ_API_KEY", raising=False)
+        providers = ProviderAPISettings(_env_file=None, OPENAI_API_KEY="sk_openai")
         assert providers.get_llm_key() == "sk_openai"
 
     def test_reports_no_key_when_none_is_set(self, monkeypatch):
@@ -242,6 +254,7 @@ class TestKeyResolution:
     def test_model_and_endpoint_are_overridable(self):
         from core.config import ProviderAPISettings
         providers = ProviderAPISettings(
+            _env_file=None,
             GROQ_MODEL="llama-3.1-8b-instant",
             GROQ_API_BASE_URL="https://example.test/v1/chat",
         )

@@ -7,6 +7,7 @@ from core.config import LOCATION_MAP, LocationCoords, LocationEnum, settings
 from schemas.risk import SeverityMode
 from schemas.weather import BeachWeatherResponse, SeverityModeEnum, WeatherAlert
 from services.risk_engine import evaluate_risk
+from services.tide_tables import next_published_tide
 
 logger = logging.getLogger("weather_service")
 
@@ -137,6 +138,17 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
             marine_source = "Internal Marine Cache"
 
     # 4. Aggregation and Risk Evaluation
+    # Published tide predictions beat the model where we have them. Open-Meteo's
+    # global sea-level field does not resolve coastal tides: checked against
+    # published tables it was wrong on both the time and the type at Mumbai.
+    local_now = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).replace(
+        tzinfo=None
+    )
+    published = next_published_tide(location, local_now)
+    if published:
+        marine_data.update(published)
+    tide_source = marine_data.get("tide_source", f"{marine_source} (modelled tide)")
+
     wave_height = float(marine_data.get("wave_height_m", 1.2))
     # Wind and UV both come from Open-Meteo, whichever provider supplied the
     # air temperature.
@@ -263,9 +275,10 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
         # Named precisely: wind and UV come from Open-Meteo even when the air
         # temperature came from a commercial provider.
         data_source=(
-            f"{weather_source} (air) + Open-Meteo (wind, UV) + {marine_source}"
+            f"{weather_source} (air) + Open-Meteo (wind, UV) + "
+            f"{marine_source} + {tide_source}"
             if reference is not None
-            else f"{weather_source} + {marine_source}"
+            else f"{weather_source} + {marine_source} + {tide_source}"
         ),
         severity_mode=severity,
         risk_title=risk_title,

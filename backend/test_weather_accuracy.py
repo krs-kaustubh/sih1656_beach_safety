@@ -187,8 +187,13 @@ class TestDegradedData:
 
         self._all_providers_down(monkeypatch)
         r = asyncio.run(get_beach_weather(LocationEnum.JUHU))
-        assert r.next_tide_time is None
-        assert r.next_tide_type is None
+        # The tide may still be present: published predictions are harmonic
+        # calculations for the port, independent of any weather provider, so
+        # they remain valid when every live feed is down. What must not appear
+        # is an invented one.
+        if r.next_tide_time is not None:
+            assert "Published tide table" in r.data_source
+            assert r.next_tide_type in {"High", "Low"}
         assert r.sea_temperature_c is None
 
     def test_raises_no_hazard_alerts_off_placeholder_numbers(self, monkeypatch):
@@ -224,3 +229,65 @@ class TestRoster:
 
         slugs = {b["location_id"] for b in MOCK_BEACHES}
         assert slugs == {loc.value for loc in LocationEnum}
+
+
+class TestPublishedTides:
+    """Published predictions take precedence over the model.
+
+    Open-Meteo's global sea-level field put Mumbai's next turn at 14:30 Low on
+    22 August 2026; the published table says 12:59 High. Wrong on both counts.
+    """
+
+    def test_returns_the_next_turn_after_the_given_time(self):
+        from datetime import datetime
+        from core.config import LocationEnum
+        from services.tide_tables import next_published_tide
+
+        at_four_pm = datetime(2026, 8, 22, 16, 0)
+        assert next_published_tide(LocationEnum.JUHU, at_four_pm) == {
+            "next_tide_time": "20:24",
+            "next_tide_type": "Low",
+            "tide_source": "Published tide table",
+        }
+        assert next_published_tide(LocationEnum.MARINA, at_four_pm)["next_tide_time"] == "16:32"
+        assert next_published_tide(LocationEnum.RADHANAGAR, at_four_pm)["next_tide_time"] == "16:38"
+
+    def test_skips_turns_that_have_already_passed(self):
+        from datetime import datetime
+        from core.config import LocationEnum
+        from services.tide_tables import next_published_tide
+
+        # 09:00 is past Mumbai's 08:41 low, so the next turn is the midday high.
+        result = next_published_tide(LocationEnum.JUHU, datetime(2026, 8, 22, 9, 0))
+        assert result["next_tide_time"] == "12:59"
+        assert result["next_tide_type"] == "High"
+
+    def test_reports_nothing_once_the_day_is_done(self):
+        from datetime import datetime
+        from core.config import LocationEnum
+        from services.tide_tables import next_published_tide
+
+        # Better to fall back to the model than show a time from the wrong day.
+        assert next_published_tide(LocationEnum.JUHU, datetime(2026, 8, 22, 23, 0)) is None
+
+    def test_reports_nothing_for_an_uncovered_date(self):
+        from datetime import datetime
+        from core.config import LocationEnum
+        from services.tide_tables import next_published_tide
+
+        assert next_published_tide(LocationEnum.JUHU, datetime(2027, 1, 1, 12, 0)) is None
+
+    def test_every_table_is_chronological_and_alternates(self):
+        # A table that repeats High twice running, or runs backwards, is a
+        # transcription error rather than a tide.
+        from services.tide_tables import PUBLISHED_TIDES
+
+        for location, days in PUBLISHED_TIDES.items():
+            for day, turns in days.items():
+                minutes = [h * 60 + m for h, m, _ in turns]
+                assert minutes == sorted(minutes), f"{location} {day} out of order"
+                kinds = [k for _, _, k in turns]
+                assert all(a != b for a, b in zip(kinds, kinds[1:])), (
+                    f"{location} {day} does not alternate high/low"
+                )
+                assert set(kinds) <= {"High", "Low"}
