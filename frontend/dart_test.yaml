@@ -1,13 +1,15 @@
+# File: dart_test.yaml
+# Description: Configuration for Dart test tags and execution policies including golden tests and live API integration test suite exclusions.
+
 tags:
   golden:
-    # Golden images render without bundled fonts and vary by host, so they are
-    # a local visual-inspection tool rather than a CI assertion.
-    #   flutter test --run-skipped -t golden --update-goldens
-    # then open frontend/test/goldens/*.png
+    # Golden images render without bundled fonts and vary by host, so they serve as a local visual inspection tool.
+    # Command: flutter test --run-skipped -t golden --update-goldens
+    # Output path: frontend/test/goldens/*.png
     skip: "Visual check only. Run: flutter test --run-skipped -t golden --update-goldens"
   live:
-    # Needs a service on localhost plus real calls to the weather providers,
-    # so it must never gate a normal test run.
-    #   cd backend && USE_MOCK_DATA=false .venv/bin/python -m uvicorn main:app --port 8000
-    #   flutter test --run-skipped -t live test/api_integration_test.dart
+    # Requires a backend service running on localhost with real weather provider calls.
+    # Backend command: cd backend && USE_MOCK_DATA=false .venv/bin/python -m uvicorn main:app --port 8000
+    # Test command: flutter test --run-skipped -t live test/api_integration_test.dart
     skip: "Requires a running backend. Run: flutter test --run-skipped -t live"
+

@@ -1,16 +1,16 @@
+// File: lib/features/maps/map_projection.dart
+// Description: Projection helper mapping geographic coordinates (longitude and latitude) to canvas pixel coordinates using uniform Web Mercator scaling.
+
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 
 import 'map_geometry.dart';
 
-/// Maps lon/lat onto a canvas, fitting India's bounds inside [size] without
-/// distorting the aspect ratio.
-///
-/// Built once per layout and shared by the painter and by hit-testing, so a
-/// marker is always drawn exactly where a tap will find it.
+// Maps longitude and latitude onto a canvas fitting region bounds inside size without aspect ratio distortion.
 @immutable
 class MapProjection {
+
   const MapProjection._({
     required this.size,
     required this.scale,

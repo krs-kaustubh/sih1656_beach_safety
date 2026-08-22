@@ -1,13 +1,14 @@
+// File: lib/features/alerts/widgets/risk_meter.dart
+// Description: Risk meter track component visualizing Low-Moderate-Severe risk levels with segmented dots and label indicators.
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../models/risk_level.dart';
 
-/// The Low - Moderate - Severe track on the alert detail screen.
-///
-/// The active level is marked by a filled dot *and* by a bolded, coloured
-/// label, so the reading never depends on colour alone.
+// Low - Moderate - Severe track component on the alert detail screen.
 class RiskMeter extends StatelessWidget {
+
   const RiskMeter({
     super.key,
     required this.level,

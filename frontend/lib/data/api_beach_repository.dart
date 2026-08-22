@@ -1,27 +1,22 @@
+// File: lib/data/api_beach_repository.dart
+// Description: Live data repository implementation communicating with FastAPI endpoints to fetch beach rosters, real-time weather readings, and safety alerts.
+
 import '../models/beach.dart';
 import '../models/beach_weather.dart';
 import '../models/safety_alert.dart';
 import 'api_client.dart';
 import 'beach_repository.dart';
 
-/// Live repository backed by the FastAPI service.
-///
-/// Two endpoints are combined:
-///  * `/beaches` — the roster: ids, names, coordinates. Its `safety_status`
-///    comes from static fixtures, so it is not trusted for risk.
-///  * `/beaches/{slug}/weather` — the live reading: risk, conditions, alerts.
-///
-/// The roster is fetched once and each beach enriched with its live reading,
-/// so the map and the search sheet show current risk rather than fixture data.
+// Live repository backed by the FastAPI service combining /beaches roster and /beaches/{slug}/weather readings.
 class ApiBeachRepository implements BeachRepository {
   ApiBeachRepository({ApiClient? client, this.freshness = const Duration(minutes: 2)})
       : _client = client ?? ApiClient();
 
   final ApiClient _client;
 
-  /// How long a reading is reused before being refetched. Home and Alerts both
-  /// need the same payload, and pull-to-refresh invalidates it anyway.
+  // How long a reading is reused before being refetched.
   final Duration freshness;
+
 
   final Map<int, _Cached> _weather = {};
 
@@ -79,11 +74,7 @@ class ApiBeachRepository implements BeachRepository {
     return null;
   }
 
-  /// A live reading, or null if this beach has none available.
-  ///
-  /// One beach's feed failing should not blank the whole roster, so the
-  /// failure is absorbed and that beach falls back to what `/beaches` said
-  /// about it. That is still the service's own answer, just a static one.
+  // A live reading, or null if this beach has none available.
   Future<BeachWeather?> _tryReadingFor(Beach beach) async {
     try {
       return await _readingFor(beach);
@@ -92,7 +83,7 @@ class ApiBeachRepository implements BeachRepository {
     }
   }
 
-  /// Fetches (or reuses) the live reading for a beach.
+  // Fetches or reuses the live reading for a beach.
   Future<BeachWeather> _readingFor(Beach beach) async {
     final cached = _weather[beach.id];
     if (cached != null && cached.isFresh(freshness)) return cached.value;
@@ -110,13 +101,9 @@ class ApiBeachRepository implements BeachRepository {
     return reading;
   }
 
-  /// The weather endpoint's key for a beach.
-  ///
-  /// The roster now carries `location_id`, so this is normally just read off
-  /// the response. The name-derived fallback remains for older builds of the
-  /// service that predate that field; it works only while a beach's slug is
-  /// its first word, which is why the service sending it is the real fix.
+  // The weather endpoint's key for a beach.
   static String? slugFor(Beach beach) {
+
     final provided = beach.locationId?.trim();
     if (provided != null && provided.isNotEmpty) return provided;
 

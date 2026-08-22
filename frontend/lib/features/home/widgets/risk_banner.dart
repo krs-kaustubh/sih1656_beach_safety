@@ -1,3 +1,6 @@
+// File: lib/features/home/widgets/risk_banner.dart
+// Description: Risk banner card component presenting overall safety status, summary text, and triggered risk driver tags.
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -5,15 +8,13 @@ import '../../../core/theme/risk_theme.dart';
 import '../../../models/beach.dart';
 import '../../../models/risk_level.dart';
 
-/// The headline risk card: flag badge, "Low Risk", and a plain-language
-/// explanation of what the rating means for someone standing on the sand.
+// The headline risk card: flag badge, Risk Level label, and plain-language explanation.
 class RiskBanner extends StatelessWidget {
   const RiskBanner({super.key, required this.beach});
 
   final Beach beach;
 
-  /// Used when the backend has not supplied a `risk_summary`, so the banner is
-  /// never left with an empty body.
+  // Fallback summary when risk_summary is empty.
   static String _fallbackSummary(RiskLevel level) => switch (level) {
         RiskLevel.low => 'Conditions are safe for swimming and other water activities.',
         RiskLevel.moderate =>
@@ -21,6 +22,7 @@ class RiskBanner extends StatelessWidget {
         RiskLevel.high =>
           'Dangerous conditions. Strong currents and high waves. Avoid entering water.',
       };
+
 
   @override
   Widget build(BuildContext context) {
@@ -83,11 +85,9 @@ class RiskBanner extends StatelessWidget {
 }
 
 
-/// Names the measurements that pushed the rating up.
-///
-/// A colour and a sentence say *what* the rating is; these say *why*, which is
-/// the difference between being told a verdict and being able to check it.
+// Names the measurements that pushed the rating up.
 class _RiskDrivers extends StatelessWidget {
+
   const _RiskDrivers({required this.drivers, required this.foreground});
 
   final List<String> drivers;

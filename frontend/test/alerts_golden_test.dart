@@ -1,3 +1,6 @@
+// File: test/alerts_golden_test.dart
+// Description: Golden UI visual regression test capturing rendered AlertsScreen states for low, moderate, high, and empty alert levels.
+
 @Tags(['golden'])
 library;
 
@@ -13,9 +16,9 @@ import 'package:beach_safety/settings/settings_providers.dart';
 
 import 'support/test_settings.dart';
 
-/// Renders the Alerts tab at each severity so the gradient backdrops can be
-/// reviewed without a device. See dart_test.yaml for how to run it.
+// Renders the Alerts tab at each severity level to capture golden snapshots.
 void main() {
+
   for (final (name, beachId) in const [
     ('low', 3),
     ('moderate', 2),

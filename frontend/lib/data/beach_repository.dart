@@ -1,26 +1,23 @@
+// File: lib/data/beach_repository.dart
+// Description: Abstract interface defining the repository contract for retrieving beach data and safety alerts, along with repository exception definitions.
+
 import '../models/beach.dart';
 import '../models/safety_alert.dart';
 
-/// Data source for beaches and alerts.
-///
-/// The UI depends only on this interface, so swapping [MockBeachRepository]
-/// for [ApiBeachRepository] is a one-line change in `providers.dart` and needs
-/// no widget edits.
+// Data source interface for beaches and alerts.
 abstract interface class BeachRepository {
   Future<List<Beach>> getBeaches();
   Future<Beach> getBeach(int id);
 
-  /// Alerts for a beach, most severe first.
+  // Alerts for a beach, most severe first.
   Future<List<SafetyAlert>> getAlerts(int beachId);
 
   Future<SafetyAlert?> getAlert(String alertId);
 }
 
-/// A failure the UI knows how to present.
-///
-/// Wrapping transport errors here keeps `SocketException` and friends out of
-/// the widget layer and gives every error state a message worth showing.
+// Exception failure state presented by the UI.
 class BeachRepositoryException implements Exception {
+
   const BeachRepositoryException(this.message, {this.isOffline = false});
 
   final String message;

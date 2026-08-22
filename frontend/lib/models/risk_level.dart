@@ -1,8 +1,7 @@
-/// Overall safety rating for a beach or an alert.
-///
-/// The backend expresses this as `safety_status` with the values
-/// `Green` | `Amber` | `Red`. Everything user-facing keys off this enum, so
-/// the wire format stays confined to [fromApi].
+// File: lib/models/risk_level.dart
+// Description: Enum defining overall safety risk levels (Low, Moderate, High), API string mapping, risk meter position calculations, and surface contrast settings.
+
+// Overall safety rating for a beach or an alert.
 enum RiskLevel {
   low(apiValue: 'Green', label: 'Low Risk', shortLabel: 'Low'),
   moderate(apiValue: 'Amber', label: 'Moderate Risk', shortLabel: 'Moderate'),
@@ -14,19 +13,16 @@ enum RiskLevel {
     required this.shortLabel,
   });
 
-  /// Value used by the backend's `safety_status` field.
+  // Value used by the backend's safety_status field.
   final String apiValue;
 
-  /// Full label, e.g. the risk banner headline on Home.
+  // Full label, e.g. the risk banner headline on Home.
   final String label;
 
-  /// Compact label used in the risk meter and status chips.
+  // Compact label used in the risk meter and status chips.
   final String shortLabel;
 
-  /// The service speaks two vocabularies for the same idea: `/beaches` returns
-  /// `safety_status` as Green/Amber/Red, while `/beaches/{id}/weather` returns
-  /// `severity_mode` as Normal/Intermediate/Severe. Both are accepted here so
-  /// the mismatch stays in one place instead of leaking into the UI.
+  // The service speaks two vocabularies: Green/Amber/Red and Normal/Intermediate/Severe.
   static const _aliases = <String, RiskLevel>{
     'green': RiskLevel.low,
     'normal': RiskLevel.low,
@@ -37,24 +33,20 @@ enum RiskLevel {
     'severe': RiskLevel.high,
   };
 
-  /// Parses a risk value from either vocabulary, falling back to [moderate]
-  /// for anything unrecognised.
-  ///
-  /// Failing "safe" here would be worse than failing cautious: an unknown
-  /// status rendered as Low Risk could tell someone the water is fine when
-  /// the backend was trying to say otherwise.
+  // Parses a risk value from either vocabulary, falling back to moderate for unrecognised values.
   static RiskLevel fromApi(String? value) {
     if (value == null) return RiskLevel.moderate;
     return _aliases[value.trim().toLowerCase()] ?? RiskLevel.moderate;
   }
 
-  /// Position on the Low - Moderate - Severe meter, from 0.0 to 1.0.
+  // Position on the Low - Moderate - Severe meter, from 0.0 to 1.0.
   double get meterPosition => switch (this) {
         RiskLevel.low => 0.0,
         RiskLevel.moderate => 0.5,
         RiskLevel.high => 1.0,
       };
 
-  /// The high-risk screens in the designs are dark-themed; the others light.
+  // High-risk screens in the designs are dark-themed; the others light.
   bool get usesDarkSurface => this == RiskLevel.high;
 }
+

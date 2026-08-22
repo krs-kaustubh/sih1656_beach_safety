@@ -1,17 +1,12 @@
+// File: lib/widgets/risk_backdrop.dart
+// Description: Full-bleed background widget combining photograph backdrops with fallback procedural scene rendering and content gradient scrims.
+
 import 'package:flutter/material.dart';
 
 import '../core/theme/risk_theme.dart';
 import 'backdrop_scene.dart';
 
-/// Full-bleed background behind the Home screen.
-///
-/// Shows the photograph for the ambient risk level — clear day, sunset or
-/// storm. If that asset fails to load, [BackdropScenePainter] draws the
-/// equivalent scene instead, so the screen degrades to something that still
-/// looks deliberate rather than to a blank rectangle.
-///
-/// Either way the lower half fades into the page colour, which is what keeps
-/// the cards and the "Active Alerts" heading readable over a busy photo.
+// Full-bleed background behind the Home screen with photo assets or procedural fallbacks.
 class RiskBackdrop extends StatelessWidget {
   const RiskBackdrop({
     super.key,
@@ -21,14 +16,12 @@ class RiskBackdrop extends StatelessWidget {
 
   final Widget child;
 
-  /// Overrides the risk level's own photograph.
+  // Overrides the risk level's own photograph.
   final String? imageAsset;
 
-  /// Where the photo starts giving way to the page colour, and where it has
-  /// fully done so. The end sits above the "Active Alerts" heading so that
-  /// text never lands on open water, but late enough to leave the surf and
-  /// shoreline visible behind the metric cards.
+  // Where the photo starts giving way to the page colour.
   static const _fadeStops = [0.30, 0.62, 0.78];
+
 
   @override
   Widget build(BuildContext context) {

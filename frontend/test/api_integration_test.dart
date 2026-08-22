@@ -1,3 +1,6 @@
+// File: test/api_integration_test.dart
+// Description: Live integration test validating network communication with local FastAPI service endpoints, roster enrichment, and alert parsing.
+
 @Tags(['live'])
 library;
 
@@ -9,14 +12,9 @@ import 'package:beach_safety/data/api_beach_repository.dart';
 import 'package:beach_safety/data/api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Exercises the client against a real running service.
-///
-///   cd backend && USE_MOCK_DATA=false .venv/bin/python -m uvicorn main:app --port 8000
-///   cd frontend && flutter test --run-skipped -t live test/api_integration_test.dart
-///
-/// Skipped by default: it needs a service on localhost and real network calls
-/// to the weather providers, so it must never gate a normal test run.
+// Exercises the ApiBeachRepository against a real running service.
 void main() {
+
   late ApiBeachRepository repo;
 
   setUp(() {

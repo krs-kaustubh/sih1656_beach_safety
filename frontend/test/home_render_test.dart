@@ -1,3 +1,6 @@
+// File: test/home_render_test.dart
+// Description: Widget test suite verifying home screen widget rendering, alert details screen panel layout, and safe empty state behavior.
+
 import 'package:beach_safety/core/theme/app_theme.dart';
 import 'package:beach_safety/data/mock_beach_repository.dart';
 import 'package:beach_safety/data/mock_data.dart';
@@ -15,6 +18,7 @@ import 'package:beach_safety/settings/settings_providers.dart';
 import 'support/test_settings.dart';
 
 void main() {
+
   testWidgets('Home renders the beach, risk banner and alerts', (tester) async {
     final geometry = await _loadGeometry(tester);
 
@@ -95,7 +99,7 @@ void main() {
   });
 }
 
-/// Pins the selected beach id for a test.
+// Pins the selected beach id for a test.
 class _FixedBeachId extends SelectedBeachId {
   _FixedBeachId(this.id);
   final int id;
@@ -104,10 +108,9 @@ class _FixedBeachId extends SelectedBeachId {
   int? build() => id;
 }
 
-/// AppShell holds every tab in an IndexedStack, so the Maps tab builds even in
-/// a Home test. Its outline comes from rootBundle, which needs a real async
-/// pump that pumpAndSettle cannot provide — load it up front instead.
+// AppShell holds tabs in an IndexedStack, so geometry is preloaded up front.
 Future<MapGeometry> _loadGeometry(WidgetTester tester) async {
+
   late final MapGeometry geometry;
   await tester.runAsync(() async => geometry = await MapGeometry.load());
   return geometry;

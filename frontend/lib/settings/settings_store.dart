@@ -1,14 +1,14 @@
+// File: lib/settings/settings_store.dart
+// Description: Local storage persistence wrapper backed by SharedPreferences for saving and reading AppSettings options across app sessions.
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_settings.dart';
 
-/// Persists [AppSettings] to device storage.
-///
-/// Every read falls back to the default when a key is missing or holds a value
-/// this build no longer recognises, so an old install or a hand-edited
-/// preference file cannot leave the app in an unrenderable state.
+// Persists AppSettings to device storage with fallback defaults.
 class SettingsStore {
   SettingsStore(this._prefs);
+
 
   final SharedPreferences _prefs;
 

@@ -1,19 +1,20 @@
+// File: lib/settings/settings_providers.dart
+// Description: Riverpod providers and state controller for accessing AppSettings, persisting configuration edits, and exposing UnitFormatter instance.
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_settings.dart';
 import 'settings_store.dart';
 import 'unit_formatter.dart';
 
-/// Overridden in `main()` once storage has opened, and in tests with an
-/// in-memory store. Reading it before that is a programming error, not a
-/// runtime condition, so it throws rather than silently using defaults.
+// Overridden in main() once storage has opened, and in tests with an in-memory store.
 final settingsStoreProvider = Provider<SettingsStore>(
   (ref) => throw StateError('settingsStoreProvider was not overridden'),
 );
 
-/// Current settings. Writes persist immediately — a preference that survives
-/// only until the next launch is worse than no preference at all.
+// Current settings controller. Writes persist immediately to settings store.
 class SettingsController extends Notifier<AppSettings> {
+
   @override
   AppSettings build() => ref.read(settingsStoreProvider).read();
 
@@ -51,7 +52,8 @@ class SettingsController extends Notifier<AppSettings> {
 final settingsProvider =
     NotifierProvider<SettingsController, AppSettings>(SettingsController.new);
 
-/// Formatter matching the current settings. Rebuilt only when they change.
+// Formatter matching the current settings. Rebuilt only when settings change.
 final formatterProvider = Provider<UnitFormatter>(
   (ref) => UnitFormatter(ref.watch(settingsProvider)),
 );
+

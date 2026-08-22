@@ -1,3 +1,6 @@
+// File: test/settings_test.dart
+// Description: Unit test suite for unit conversion math, UnitFormatter text output, AlertSeverityFilter logic, SettingsStore persistence, and SettingsController state updates.
+
 import 'package:beach_safety/models/risk_level.dart';
 import 'package:beach_safety/settings/app_settings.dart';
 import 'package:beach_safety/settings/settings_providers.dart';
@@ -8,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('unit conversion', () {

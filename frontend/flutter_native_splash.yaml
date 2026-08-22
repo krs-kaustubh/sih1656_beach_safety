@@ -1,8 +1,10 @@
-# Launch screen for both platforms.
-#   dart run flutter_native_splash:create
-#
-# Navy to match the app icon, so launching does not flash white before the
-# first frame.
+# File: flutter_native_splash.yaml
+# Description: Configuration for generating native splash screen launch visuals for Android and iOS.
+
+# Launch screen setup for both platforms.
+# Command: dart run flutter_native_splash:create
+# Navy background matches app icon color to prevent white flashes on app launch.
+
 flutter_native_splash:
   color: "#01214E"
   image: assets/branding/icon_foreground.png

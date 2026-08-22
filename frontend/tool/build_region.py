@@ -1,23 +1,16 @@
-"""Regenerates assets/geo/region.json — country outlines, labels and cities.
+# File: tool/build_region.py
+# Description: Preprocessing script that parses Natural Earth GeoJSON vector boundaries and simplifies country polygon rings for map rendering.
 
-Run from the frontend/ directory:
+# Regenerates assets/geo/region.json — country outlines, labels and cities.
+# Run from the frontend/ directory:
+#   curl -o /tmp/ind_pov.json https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries_ind.geojson
+#   python3 tool/build_region.py /tmp/ind_pov.json assets/geo/region.json
+# Note: Uses India point-of-view GeoJSON edition.
 
-    curl -o /tmp/ind_pov.json \
-      https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries_ind.geojson
-    python3 tool/build_region.py /tmp/ind_pov.json assets/geo/region.json
-
-The _ind suffix is the India point-of-view edition. The default Natural Earth
-release draws Jammu & Kashmir on de-facto control lines rather than India's
-official boundary, so it is the wrong file to use here.
-
-City labels come from ne_10m_populated_places_simple.geojson and are merged in
-separately; see the README.
-
-Natural Earth is public domain.
-"""
 import json, math, sys
 
 # Region shown on the map: India plus enough of its neighbours for context.
+
 WEST, EAST, SOUTH, NORTH = 55.0, 105.0, -6.0, 44.0
 
 def rdp(pts, eps):

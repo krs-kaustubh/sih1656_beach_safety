@@ -1,3 +1,6 @@
+// File: lib/features/alerts/alerts_screen.dart
+// Description: Alerts tab screen displaying active safety warnings for the selected beach under a light severity backdrop.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,8 +14,9 @@ import '../../widgets/severity_backdrop.dart';
 import '../home/widgets/active_alerts_section.dart';
 import 'alert_detail_screen.dart';
 
-/// The Alerts tab: every active alert for the selected beach.
+// The Alerts tab listing active alerts for the selected beach.
 class AlertsScreen extends ConsumerWidget {
+
   const AlertsScreen({super.key});
 
   @override

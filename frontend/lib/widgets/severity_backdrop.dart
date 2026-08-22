@@ -1,14 +1,13 @@
+// File: lib/widgets/severity_backdrop.dart
+// Description: Backdrop container applying a severity-tinted vertical color gradient behind alerts and lists.
+
 import 'package:flutter/material.dart';
 
 import '../core/theme/risk_theme.dart';
 
-/// A plain severity-tinted gradient, used where a photograph would compete
-/// with the content.
-///
-/// The Alerts tab is a list of warnings to be read, not a view of the beach.
-/// A tint that says "green / amber / red" at a glance carries the severity
-/// without the photograph's busy detail sitting behind the text.
+// A plain severity-tinted gradient used where a photograph would compete with content.
 class SeverityBackdrop extends StatelessWidget {
+
   const SeverityBackdrop({super.key, required this.child});
 
   final Widget child;

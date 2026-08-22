@@ -1,3 +1,6 @@
+// File: lib/features/home/widgets/home_header.dart
+// Description: Header widget for the home screen showing selected beach title, region subtitle, and active clock pill.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,8 +10,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/risk_theme.dart';
 import '../../../models/beach.dart';
 
-/// Beach name, region and the current-time pill.
+// Beach name, region and the current-time pill.
 class HomeHeader extends ConsumerWidget {
+
   const HomeHeader({super.key, required this.beach, required this.time});
 
   final Beach beach;

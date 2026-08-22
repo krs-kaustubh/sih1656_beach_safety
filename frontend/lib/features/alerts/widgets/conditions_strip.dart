@@ -1,3 +1,6 @@
+// File: lib/features/alerts/widgets/conditions_strip.dart
+// Description: Four-cell summary strip displaying wave height, wind, tide, and water temperature readings on alert detail screens.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,8 +9,9 @@ import '../../../settings/settings_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/conditions.dart';
 
-/// The four-across "CURRENT CONDITIONS" row on the alert detail screen.
+// The four-across CURRENT CONDITIONS row on the alert detail screen.
 class ConditionsStrip extends ConsumerWidget {
+
   const ConditionsStrip({
     super.key,
     required this.conditions,

@@ -1,8 +1,11 @@
+# File: pubspec.yaml
+# Description: Configuration file defining project metadata, SDK environment, package dependencies, asset paths, and build settings for the beach safety app.
+
 name: beach_safety
 description: "Lehar — beach safety for India's coastline (SIH PS 1656)."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+# Prevents accidental publishing to pub.dev.
+publish_to: 'none'
+
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43

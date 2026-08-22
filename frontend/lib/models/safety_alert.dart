@@ -1,9 +1,12 @@
+// File: lib/models/safety_alert.dart
+// Description: Data structures representing beach safety warnings, alert hazard kinds, urgency levels, affected area bounds, lifeguard tower statuses, and JSON deserialization.
+
 import 'package:flutter/foundation.dart';
 
 import 'conditions.dart';
 import 'risk_level.dart';
 
-/// Kind of hazard an alert describes. Drives the icon shown on the alert card.
+// Kind of hazard an alert describes. Drives the icon shown on the alert card.
 enum AlertKind {
   ripCurrent('Rip Current'),
   uv('UV'),
@@ -26,7 +29,7 @@ enum AlertKind {
   }
 }
 
-/// The call-to-action chip beside the risk level on the detail header.
+// The call-to-action chip beside the risk level on the detail header.
 enum AlertUrgency {
   advisory('ADVISORY'),
   actNow('ACT NOW');
@@ -35,10 +38,10 @@ enum AlertUrgency {
   final String label;
 }
 
-/// Whether an alert's time is presented as a single issue time or a window.
+// Whether an alert's time is presented as a single issue time or a window.
 enum AlertTimeStyle { issued, window }
 
-/// On-duty state of the lifeguard tower covering an alert's zone.
+// On-duty state of the lifeguard tower covering an alert's zone.
 @immutable
 class LifeguardStatus {
   const LifeguardStatus({
@@ -57,7 +60,7 @@ class LifeguardStatus {
       );
 }
 
-/// The geographic zone an alert applies to, plus the thumbnail map copy.
+// The geographic zone an alert applies to, plus the thumbnail map copy.
 @immutable
 class AffectedArea {
   const AffectedArea({
@@ -80,12 +83,10 @@ class AffectedArea {
       );
 }
 
-/// A safety alert for a beach.
-///
-/// Named `SafetyAlert` rather than `Alert` to avoid colliding with Flutter's
-/// Material `Alert*` widgets.
+// A safety alert for a beach.
 @immutable
 class SafetyAlert {
+
   const SafetyAlert({
     required this.id,
     required this.beachId,
@@ -112,19 +113,19 @@ class SafetyAlert {
   final RiskLevel riskLevel;
   final AlertUrgency urgency;
 
-  /// Headline, e.g. "Rip Current Advisory".
+  // Headline, e.g. Rip Current Advisory.
   final String title;
 
-  /// One-line description shown under the title on the Home alert card.
+  // One-line description shown under the title on the Home alert card.
   final String summary;
 
-  /// Where it applies, e.g. "South Shore" or "Whole Coastline".
+  // Where it applies, e.g. South Shore or Whole Coastline.
   final String zoneLabel;
 
   final DateTime issuedAt;
   final DateTime? validUntil;
 
-  /// Whether the card shows "Issued 6:15 AM" or a "11 AM - 3 PM" window.
+  // Whether the card shows Issued 6:15 AM or a 11 AM - 3 PM window.
   final AlertTimeStyle timeStyle;
 
   final String whatsHappening;
@@ -132,11 +133,11 @@ class SafetyAlert {
   final LifeguardStatus? lifeguard;
   final AffectedArea? affectedArea;
 
-  /// Conditions at the time the alert was raised. Falls back to the beach's
-  /// current conditions when the backend does not supply a snapshot.
+  // Conditions at the time the alert was raised.
   final Conditions? conditions;
 
   final String? safetyTip;
+
 
   factory SafetyAlert.fromJson(Map<String, dynamic> json) => SafetyAlert(
         id: json['id']?.toString() ?? '',

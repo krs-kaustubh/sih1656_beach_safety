@@ -1,4 +1,10 @@
+<!--
+File: README.md
+Description: Documentation overview for the Beach Safety frontend Flutter client architecture, setup, backend API integration, and features.
+-->
+
 # Lehar — Flutter Frontend
+
 
 Lehar (लहर, "wave") is the mobile client for the Beach Safety API
 (SIH PS 1656). Targets Android first, iOS

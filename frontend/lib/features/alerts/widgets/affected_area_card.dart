@@ -1,14 +1,14 @@
+// File: lib/features/alerts/widgets/affected_area_card.dart
+// Description: Affected area widget displaying a map thumbnail schematic alongside zone title, description, and full map button trigger.
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../models/safety_alert.dart';
 
-/// "AFFECTED AREA": a map thumbnail beside the zone description.
-///
-/// The thumbnail is a placeholder until the Maps phase settles on a provider.
-/// [MapThumbnail] is the only piece that changes then — swapping it for a real
-/// static map or a small `FlutterMap` leaves this layout untouched.
+// AFFECTED AREA component with map thumbnail beside zone description.
 class AffectedAreaCard extends StatelessWidget {
+
   const AffectedAreaCard({
     super.key,
     required this.area,
@@ -94,10 +94,9 @@ class AffectedAreaCard extends StatelessWidget {
   }
 }
 
-/// Stand-in for the zone map: a shoreline with the affected stretch tinted and
-/// the lifeguard tower pinned. Deliberately schematic rather than a fake
-/// screenshot, so nobody mistakes it for real cartography.
+// Stand-in for the zone map showing shoreline and tower location.
 class MapThumbnail extends StatelessWidget {
+
   const MapThumbnail({super.key, required this.accent, required this.area});
 
   final Color accent;

@@ -1,3 +1,6 @@
+// File: lib/features/home/widgets/conditions_grid.dart
+// Description: Grid layout widget organizing metric cards for wave height, wind speed, UV index, and upcoming tide timings.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,15 +11,15 @@ import '../../../core/theme/risk_theme.dart';
 import '../../../models/conditions.dart';
 import 'metric_card.dart';
 
-/// The 2x2 grid of readings under the risk banner.
+// The 2x2 grid of readings under the risk banner.
 class ConditionsGrid extends ConsumerWidget {
   const ConditionsGrid({super.key, required this.conditions});
 
   final Conditions conditions;
 
-  /// UV is the one reading the designs colour by severity, since a high index
-  /// is itself the warning.
+  // UV is the one reading coloured by severity.
   Color _uvColor(RiskTheme risk, UvBand? band) => switch (band) {
+
         null => risk.textSecondary,
         UvBand.low => const Color(0xFF1B7F4F),
         UvBand.moderate => const Color(0xFFB8860B),
@@ -78,13 +81,9 @@ class ConditionsGrid extends ConsumerWidget {
   }
 }
 
-/// A pair of cards that share the taller one's height.
-///
-/// `CrossAxisAlignment.stretch` cannot do this inside a scrollable — the Row
-/// has no bounded height there, so stretching asks for an infinite one.
-/// [IntrinsicHeight] measures the taller child first and gives the Row a real
-/// height to stretch into.
+// A pair of cards that share the taller one's height.
 class _EqualHeightRow extends StatelessWidget {
+
   const _EqualHeightRow({required this.left, required this.right});
 
   final Widget left;

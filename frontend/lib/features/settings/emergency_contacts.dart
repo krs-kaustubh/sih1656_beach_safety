@@ -1,6 +1,9 @@
+// File: lib/features/settings/emergency_contacts.dart
+// Description: Data models and national emergency shortcode helpline contacts list for quick dialing during incidents.
+
 import 'package:flutter/foundation.dart';
 
-/// A number worth having one tap away when conditions turn bad.
+// A number worth having one tap away when conditions turn bad.
 @immutable
 class EmergencyContact {
   const EmergencyContact({
@@ -11,20 +14,15 @@ class EmergencyContact {
 
   final String name;
 
-  /// Dialled as-is. Kept as a string because short codes have no country code
-  /// and must not be reformatted.
+  // Dialled as-is short code string.
   final String number;
 
   final String description;
 }
 
-/// India-wide emergency numbers.
-///
-/// These are national short codes, not per-beach contacts. Verify them against
-/// current official sources before any public release, and add the local
-/// lifeguard or municipal number per beach once the backend can supply it —
-/// a wrong number in a safety app is worse than no number.
+// India-wide emergency numbers list.
 const emergencyContacts = <EmergencyContact>[
+
   EmergencyContact(
     name: 'Emergency services',
     number: '112',

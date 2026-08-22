@@ -1,9 +1,13 @@
+// File: test/beach_parsing_test.dart
+// Description: Unit test suite for Beach model JSON parsing, RiskLevel mapping, name/region splitting, and UvBand categorization.
+
 import 'package:beach_safety/models/beach.dart';
 import 'package:beach_safety/models/conditions.dart';
 import 'package:beach_safety/models/risk_level.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+
   group('RiskLevel.fromApi', () {
     test('maps the backend safety_status values', () {
       expect(RiskLevel.fromApi('Green'), RiskLevel.low);

@@ -1,3 +1,6 @@
+// File: lib/widgets/backdrop_scene.dart
+// Description: Custom procedural painter drawing dynamic backdrop scenes (clear day, sunset, storm) for the home screen dashboard.
+
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -5,16 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../models/risk_level.dart';
 
-/// Paints the scene behind the Home screen: a clear day, a sunset, or a storm.
-///
-/// The designs use photographs here. Rather than ship stock imagery, this
-/// draws the same three moods procedurally — no asset weight, correct at any
-/// screen size, and tinted from the same palette as the rest of the screen.
-/// A real photo still wins when one is available; see `RiskBackdrop`.
-///
-/// Every scene follows the same structure so the layout above it stays put:
-/// sky down to the horizon, water below it, then a fade into [surfaceColor]
-/// over the lower half where the cards sit.
+// Paints the procedural scene behind the Home screen: clear day, sunset, or storm.
 class BackdropScenePainter extends CustomPainter {
   const BackdropScenePainter({
     required this.level,
@@ -23,14 +17,15 @@ class BackdropScenePainter extends CustomPainter {
 
   final RiskLevel level;
 
-  /// Colour the scene dissolves into behind the content.
+  // Colour the scene dissolves into behind the content.
   final Color surfaceColor;
 
-  /// Fraction of the height where sky meets water.
+  // Fraction of the height where sky meets water.
   static const _horizon = 0.34;
 
-  /// Where the scene has fully given way to [surfaceColor].
+  // Where the scene has fully given way to surfaceColor.
   static const _fadeEnd = 0.60;
+
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -45,9 +40,10 @@ class BackdropScenePainter extends CustomPainter {
     _paintContentFade(canvas, size);
   }
 
-  // --- Scenes ---------------------------------------------------------------
+  // Scenes
 
   void _paintClearDay(Canvas canvas, Size size) {
+
     final horizonY = size.height * _horizon;
 
     _fillRect(
@@ -139,9 +135,10 @@ class BackdropScenePainter extends CustomPainter {
         const Color(0xFFD98A92).withValues(alpha: 0.34));
   }
 
-  // --- Building blocks ------------------------------------------------------
+  // Building blocks
 
   void _fillRect(Canvas canvas, Rect rect, List<Color> colors) {
+
     canvas.drawRect(
       rect,
       Paint()

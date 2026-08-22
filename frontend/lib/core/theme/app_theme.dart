@@ -1,6 +1,9 @@
+// File: lib/core/theme/app_theme.dart
+// Description: Global application theme configuration defining standard layout insets, border radii, Material 3 base theme, and typography styles.
+
 import 'package:flutter/material.dart';
 
-/// Consistent spacing scale used across the app.
+// Consistent spacing scale used across the app.
 abstract final class Insets {
   static const double xs = 4;
   static const double sm = 8;
@@ -10,7 +13,7 @@ abstract final class Insets {
   static const double xxl = 28;
 }
 
-/// Corner radii matching the designs.
+// Corner radii matching the designs.
 abstract final class Radii {
   static const double card = 16;
   static const double banner = 20;
@@ -19,8 +22,7 @@ abstract final class Radii {
   static const double panel = 24;
 }
 
-/// Base Material theme. Per-screen colour comes from `RiskTheme`; this only
-/// sets typography and platform-wide defaults.
+// Base Material theme. Per-screen colour comes from RiskTheme; this only sets typography and platform-wide defaults.
 ThemeData buildAppTheme() {
   const seed = Color(0xFF1565C0);
   final base = ThemeData(
@@ -35,9 +37,9 @@ ThemeData buildAppTheme() {
   );
 }
 
-/// Text styles named after their role in the designs rather than by size, so
-/// call sites read as intent.
+// Text styles named after their role in the designs rather than by size, so call sites read as intent.
 abstract final class AppText {
+
   static const beachTitle = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w700,
@@ -83,7 +85,7 @@ abstract final class AppText {
     fontWeight: FontWeight.w600,
   );
 
-  /// Small all-caps labels: "RISK LEVEL", "CURRENT CONDITIONS".
+  // Small all-caps labels: RISK LEVEL, CURRENT CONDITIONS.
   static const overline = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w700,

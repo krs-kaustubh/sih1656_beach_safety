@@ -1,3 +1,6 @@
+// File: test/maps_interaction_test.dart
+// Description: Widget interaction test suite verifying map zoom controls, bounds fitting, marker taps, and beach selection updates.
+
 import 'package:beach_safety/core/theme/app_theme.dart';
 import 'package:beach_safety/data/mock_beach_repository.dart';
 import 'package:beach_safety/features/maps/map_geometry.dart';
@@ -13,6 +16,7 @@ import 'package:beach_safety/settings/settings_providers.dart';
 import 'support/test_settings.dart';
 
 void main() {
+
   const surface = Size(360, 800);
 
   Future<ProviderContainer> pumpMap(WidgetTester tester) async {
@@ -44,9 +48,9 @@ void main() {
     return container;
   }
 
-  /// Converts a map-space point into the screen point a tap must land on,
-  /// using whatever transform the map currently holds.
+  // Converts a map-space point into a screen point.
   Offset screenPoint(WidgetTester tester, Offset scene) {
+
     final viewer = tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
     return MatrixUtils.transformPoint(
       viewer.transformationController!.value,

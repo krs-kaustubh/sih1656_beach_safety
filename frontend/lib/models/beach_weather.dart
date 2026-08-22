@@ -1,3 +1,6 @@
+// File: lib/models/beach_weather.dart
+// Description: Model for parsing live weather, risk severity payload, tides, and safety alert structures returned by the weather endpoint.
+
 import 'package:flutter/foundation.dart';
 
 import 'beach.dart';
@@ -5,11 +8,8 @@ import 'conditions.dart';
 import 'risk_level.dart';
 import 'safety_alert.dart';
 
-/// The `/beaches/{location}/weather` payload.
-///
-/// This is where the live data lives — risk rating, conditions and alerts in
-/// one response — while `/beaches` only carries the roster and a static
-/// safety_status from the service's own fixtures.
+// The /beaches/{location}/weather payload.
+// This is where live data lives — risk rating, conditions and alerts in one response.
 @immutable
 class BeachWeather {
   const BeachWeather({
@@ -28,30 +28,31 @@ class BeachWeather {
     required this.alerts,
   });
 
-  /// The slug the weather endpoint is keyed by: `juhu`, `marina`, …
+  // The slug the weather endpoint is keyed by: juhu, marina, etc.
   final String locationId;
 
   final String locationName;
   final double latitude;
   final double longitude;
 
-  /// When the service assembled this reading — shown as data freshness.
+  // When the service assembled this reading — shown as data freshness.
   final DateTime observedAt;
 
-  /// Which providers answered, e.g. "Tomorrow.io + Open-Meteo Marine".
+  // Which providers answered, e.g. Tomorrow.io + Open-Meteo Marine.
   final String dataSource;
 
   final RiskLevel riskLevel;
   final String riskTitle;
   final String riskDescription;
 
-  /// Measurements that pushed the rating up.
+  // Measurements that pushed the rating up.
   final List<String> triggeredParameters;
 
-  /// `ai`, `rules`, or `unavailable`.
+  // ai, rules, or unavailable.
   final String riskEngine;
   final Conditions conditions;
   final List<WeatherAlertPayload> alerts;
+
 
   factory BeachWeather.fromJson(Map<String, dynamic> json) {
     double? asDouble(Object? v) => v == null ? null : (v as num).toDouble();
@@ -99,10 +100,7 @@ class BeachWeather {
     );
   }
 
-  /// The service sends the next tide as a bare wall-clock time ("14:15") with
-  /// no date. It is anchored to the reading's own day, and rolled forward when
-  /// that would place it in the past — the *next* tide cannot already have
-  /// happened.
+  // The service sends the next tide as a wall-clock time (14:15) with no date. It is anchored to reading's day.
   static TideInfo? _parseTide(String? time, String? type, DateTime observedAt) {
     if (time == null) return null;
     final parts = time.split(':');
@@ -124,10 +122,7 @@ class BeachWeather {
     return TideInfo(time: at, phase: TidePhase.fromApi(type));
   }
 
-  /// Folds the live reading into the roster entry from `/beaches`.
-  ///
-  /// The roster's own `safety_status` comes from static fixtures, so the live
-  /// risk always wins.
+  // Folds the live reading into the roster entry from /beaches.
   Beach applyTo(Beach beach) => beach.copyWith(
         riskLevel: riskLevel,
         conditions: conditions.copyWith(waterQuality: beach.conditions.waterQuality),
@@ -136,12 +131,7 @@ class BeachWeather {
         riskEngine: riskEngine,
       );
 
-  /// Alerts in the app's own shape.
-  ///
-  /// The service's alert objects are far thinner than the designs: a type, a
-  /// title, a time and a scope. There is no per-alert severity, no validity
-  /// window and no guidance text, so severity is inherited from the beach and
-  /// the guidance sections are left empty for the detail screen to hide.
+  // Alerts in the app's own shape.
   List<SafetyAlert> toSafetyAlerts(int beachId) => [
         for (final (index, alert) in alerts.indexed)
           SafetyAlert(
@@ -160,9 +150,9 @@ class BeachWeather {
           ),
       ];
 
-  /// The service names alert types in prose ("Cyclonic Swell Advisory",
-  /// "Extreme Solar Radiation Alert"), so the icon is chosen by keyword.
+  // The service names alert types in prose, so the icon is chosen by keyword.
   static AlertKind _kindFor(String type, String title) {
+
     final text = '$type $title'.toLowerCase();
     if (text.contains('rip') || text.contains('current')) {
       return AlertKind.ripCurrent;

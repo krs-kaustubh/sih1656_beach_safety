@@ -1,10 +1,14 @@
+// File: lib/features/alerts/widgets/lifeguard_badge.dart
+// Description: Lifeguard tower badge widget presenting tower name and on-duty/off-duty status icons.
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../models/safety_alert.dart';
 
-/// Shield, tower name and duty state, shown beside the risk meter.
+// Shield, tower name and duty state component shown on alert detail screen.
 class LifeguardBadge extends StatelessWidget {
+
   const LifeguardBadge({
     super.key,
     required this.status,

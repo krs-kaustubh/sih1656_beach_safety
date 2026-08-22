@@ -1,3 +1,6 @@
+// File: test/settings_effect_test.dart
+// Description: Widget test suite ensuring application settings (units, time format, alert filters, default beach) properly propagate to UI renderings.
+
 import 'package:beach_safety/core/theme/app_theme.dart';
 import 'package:beach_safety/data/mock_beach_repository.dart';
 import 'package:beach_safety/features/maps/map_geometry.dart';
@@ -12,9 +15,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/test_settings.dart';
 
-/// Settings are only worth having if they reach the screen. These drive the
-/// real widget tree rather than asserting on the formatter in isolation.
+// Verifies settings options drive real widget tree renderings.
 void main() {
+
   Future<ProviderContainer> pumpApp(
     WidgetTester tester, [
     AppSettings? initial,

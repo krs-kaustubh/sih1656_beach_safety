@@ -1,3 +1,6 @@
+// File: lib/data/api_client.dart
+// Description: HTTP network client wrapping request execution, timeout handling, base URL platform defaults, and exception translation.
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,15 +8,7 @@ import 'package:http/http.dart' as http;
 
 import 'beach_repository.dart';
 
-/// Where the FastAPI backend lives.
-///
-/// Overridable at build time so a demo build can point at a LAN address
-/// without a code edit:
-///   flutter run --dart-define=API_BASE_URL=http://192.168.1.5:8000
-///
-/// The default resolves per platform because `localhost` on a device does not
-/// mean the developer's machine: the Android emulator reaches the host through
-/// the 10.0.2.2 alias, while the iOS simulator shares the host's loopback.
+// Where the FastAPI backend lives. Overridable at build time via --dart-define=API_BASE_URL.
 class ApiConfig {
   static const _override = String.fromEnvironment('API_BASE_URL');
 
@@ -24,12 +19,12 @@ class ApiConfig {
   }
 }
 
-/// Thin JSON wrapper over `http`, translating transport and status failures
-/// into [BeachRepositoryException].
+// Thin JSON wrapper over HTTP client translating transport and status failures into BeachRepositoryException.
 class ApiClient {
   ApiClient({http.Client? client, String? baseUrl})
       : _client = client ?? http.Client(),
         _baseUrl = baseUrl ?? ApiConfig.baseUrl;
+
 
   final http.Client _client;
   final String _baseUrl;

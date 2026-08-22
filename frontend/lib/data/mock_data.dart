@@ -1,15 +1,14 @@
+// File: lib/data/mock_data.dart
+// Description: Static mock dataset supplying fallback beach models, weather readings, and safety alerts for offline demo mode and testing.
+
 import '../models/beach.dart';
 import '../models/conditions.dart';
 import '../models/risk_level.dart';
 import '../models/safety_alert.dart';
 
-/// Mock content mirroring the UI designs.
-///
-/// Times are built relative to "today" so the app never looks stale during a
-/// demo. Everything here is replaced by the API once the backend serves these
-/// fields — the shapes already match `SafetyAlert.fromJson` and
-/// `Beach.fromJson`.
+// Mock content mirroring the UI designs with times relative to today.
 abstract final class MockData {
+
   static DateTime _todayAt(int hour, int minute) {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, hour, minute);
@@ -106,8 +105,9 @@ abstract final class MockData {
       'If caught in a rip current, stay calm and swim parallel to shore.';
 
   static List<SafetyAlert> alerts() => [
-        // --- Juhu Beach (high risk) ---
+        // Juhu Beach high risk alerts
         SafetyAlert(
+
           id: 'juhu-rip',
           beachId: 1,
           kind: AlertKind.ripCurrent,
@@ -193,7 +193,7 @@ abstract final class MockData {
           safetyTip: 'Offshore winds can push inflatables out to sea within minutes.',
         ),
 
-        // --- Marina Beach (moderate risk) ---
+        // Marina Beach moderate risk alerts
         SafetyAlert(
           id: 'marina-rip',
           beachId: 2,
@@ -253,9 +253,9 @@ abstract final class MockData {
           safetyTip: 'Sunscreen washes off in water. Reapply after every swim.',
         ),
 
-        // --- Radhanagar Beach (low risk) keeps one advisory so the low-risk
-        // detail screen from the designs is reachable in the demo.
+        // Radhanagar Beach low risk advisory
         SafetyAlert(
+
           id: 'radhanagar-rip',
           beachId: 3,
           kind: AlertKind.ripCurrent,

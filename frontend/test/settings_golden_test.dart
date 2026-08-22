@@ -1,3 +1,6 @@
+// File: test/settings_golden_test.dart
+// Description: Golden UI visual regression test capturing rendered SettingsScreen states with controls and emergency contact rows.
+
 @Tags(['golden'])
 library;
 
@@ -13,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/test_settings.dart';
 
 void main() {
+
   testWidgets('settings screen', (tester) async {
     tester.view.physicalSize = const Size(1080, 3200);
     tester.view.devicePixelRatio = 3.0;

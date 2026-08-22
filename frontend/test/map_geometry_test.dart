@@ -1,7 +1,11 @@
+// File: test/map_geometry_test.dart
+// Description: Unit test suite for MapGeometry vector bounds, GeoJSON country shape verification, and island territory inclusions.
+
 import 'package:beach_safety/features/maps/map_geometry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MapGeometry geometry;

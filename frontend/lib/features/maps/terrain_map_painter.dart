@@ -1,3 +1,6 @@
+// File: lib/features/maps/terrain_map_painter.dart
+// Description: Custom painter for rendering dark-themed terrain maps including oceans, land polygons, boundaries, labels, and risk-coded beach markers.
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -7,13 +10,7 @@ import '../../models/beach.dart';
 import 'map_geometry.dart';
 import 'map_projection.dart';
 
-/// Draws the terrain map: ocean, land, borders, place labels and beach
-/// markers.
-///
-/// The terrain image supplies elevation colouring, but its own coastline is
-/// raster and would soften as the user zooms. So the land is clipped to the
-/// **vector** coastline and the ocean is painted by this class — coast edges
-/// stay crisp at every zoom while the fill still shows real relief.
+// Draws the terrain map: ocean, land, borders, place labels and beach markers.
 class TerrainMapPainter extends CustomPainter {
   const TerrainMapPainter({
     required this.geometry,
@@ -28,14 +25,14 @@ class TerrainMapPainter extends CustomPainter {
   final MapGeometry geometry;
   final MapProjection projection;
 
-  /// Pre-reprojected relief texture covering [MapGeometry.region]. Null until
-  /// it finishes decoding, when only the flat land colour is drawn.
+  // Pre-reprojected relief texture covering MapGeometry.region.
   final ui.Image? terrain;
 
   final List<Beach> beaches;
   final double zoom;
   final int? selectedBeachId;
   final TerrainPalette palette;
+
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -93,9 +90,10 @@ class TerrainMapPainter extends CustomPainter {
         Alignment.centerRight, Alignment.centerLeft);
   }
 
-  // --- Layers ---------------------------------------------------------------
+  // Layers
 
   void _paintOcean(Canvas canvas, Size size) {
+
     final rect = Offset.zero & size;
     canvas.drawRect(
       rect,
@@ -342,10 +340,10 @@ class TerrainMapPainter extends CustomPainter {
       old.projection != projection;
 }
 
-/// Dark-terrain colours: deep ocean, relief-coloured land, magenta political
-/// borders — the palette of a physical atlas rendered for a dark UI.
+// Dark-terrain palette for physical atlas rendering.
 @immutable
 class TerrainPalette {
+
   const TerrainPalette({
     required this.oceanShallow,
     required this.oceanDeep,

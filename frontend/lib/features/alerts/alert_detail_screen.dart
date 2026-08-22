@@ -1,3 +1,6 @@
+// File: lib/features/alerts/alert_detail_screen.dart
+// Description: Full detail view for a safety alert showing risk level meters, lifeguard availability, weather condition strips, actions, affected zone cards, and safety tips.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +16,9 @@ import 'widgets/conditions_strip.dart';
 import 'widgets/lifeguard_badge.dart';
 import 'widgets/risk_meter.dart';
 
-/// Full detail for one alert.
-///
-/// Themed by the *alert's* risk level rather than the beach's, so a moderate
-/// advisory keeps its amber treatment even when opened from a high-risk beach.
+// Full detail screen for a safety alert themed by alert risk level.
 class AlertDetailScreen extends ConsumerWidget {
+
   const AlertDetailScreen({super.key, required this.alert});
 
   final SafetyAlert alert;
@@ -303,11 +304,9 @@ class _HeaderMetaRow extends StatelessWidget {
   }
 }
 
-/// "WHAT'S HAPPENING" and "WHAT TO DO" side by side.
-///
-/// They stack on narrow screens, where two columns would squeeze the prose
-/// into unreadable ribbons.
+// WHAT'S HAPPENING and WHAT TO DO sections layout.
 class _HappeningAndActions extends StatelessWidget {
+
   const _HappeningAndActions({
     required this.alert,
     required this.accent,

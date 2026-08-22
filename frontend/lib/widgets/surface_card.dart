@@ -1,12 +1,12 @@
+// File: lib/widgets/surface_card.dart
+// Description: Reusable rounded surface card container responding to ambient RiskTheme colors with optional leading accent borders and tap handling.
+
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 import '../core/theme/risk_theme.dart';
 
-/// The rounded card used for metrics, alerts and panels.
-///
-/// Reads its colours from the ambient [RiskTheme] so the same widget renders
-/// light on the low/moderate screens and dark on the high-risk screen.
+// The rounded card used for metrics, alerts and panels, reading ambient RiskTheme colors.
 class SurfaceCard extends StatelessWidget {
   const SurfaceCard({
     super.key,
@@ -21,8 +21,9 @@ class SurfaceCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
 
-  /// Coloured bar down the left edge, used by alert cards.
+  // Coloured bar down the left edge, used by alert cards.
   final Color? leadingAccent;
+
 
   final double radius;
 

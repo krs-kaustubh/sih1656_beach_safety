@@ -1,10 +1,13 @@
+// File: lib/settings/unit_formatter.dart
+// Description: Utility class for formatting environmental readings (wave height, wind speed, temperatures, UV index) and alert timestamps according to user unit settings.
+
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
 import '../models/safety_alert.dart';
 import 'app_settings.dart';
 
-/// One formatted reading: the number and the unit shown beside it.
+// One formatted reading: the number and the unit shown beside it.
 @immutable
 class Reading {
   const Reading(this.value, this.unit);
@@ -12,12 +15,7 @@ class Reading {
   final String? unit;
 }
 
-/// Formats every measurement and clock in the app according to [AppSettings].
-///
-/// Replaces the old static `Fmt` helper. Formatting now depends on user
-/// choices, so it needs an instance — and routing every call through one place
-/// is what keeps the 12-hour header from disagreeing with the 24-hour tide
-/// readout, which is exactly what happened before this existed.
+// Formats every measurement and clock in the app according to AppSettings.
 @immutable
 class UnitFormatter {
   UnitFormatter(this.settings)
@@ -28,13 +26,14 @@ class UnitFormatter {
   final DateFormat _clock;
   final DateFormat _hour;
 
-  /// "6:42 PM" or "18:42", depending on the chosen format.
+  // Formats wall-clock time depending on chosen format.
   String clock(DateTime time) => _clock.format(time);
 
-  /// Endpoint of a time window: "11 AM" or "11:00".
+  // Formats time window endpoints.
   String hour(DateTime time) => _hour.format(time);
 
-  /// Trims a trailing ".0" so 2.8 stays "2.8" but 3.0 becomes "3".
+
+  // Trims a trailing .0 so 2.8 stays 2.8 but 3.0 becomes 3.
   static String number(double value, {int decimals = 1}) {
     final text = value.toStringAsFixed(decimals);
     return text.endsWith('.0') ? text.substring(0, text.length - 2) : text;
@@ -48,7 +47,7 @@ class UnitFormatter {
     );
   }
 
-  /// Wind speed, with the compass direction appended when known.
+  // Wind speed, with the compass direction appended when known.
   Reading windSpeed(double? kmh, {String? direction}) {
     if (kmh == null) return Reading('—', null);
     final unit = settings.windSpeedUnit;
@@ -67,14 +66,10 @@ class UnitFormatter {
     );
   }
 
-  /// UV index is a unitless number and is shown whole.
+  // UV index is a unitless number and is shown whole.
   String uv(double value) => value.round().toString();
 
-  /// The meta line under an alert title.
-  ///
-  /// Two shapes, driven by [SafetyAlert.timeStyle]:
-  ///   "Issued 6:15 AM • South Shore"
-  ///   "11 AM – 3 PM • Whole Coastline"
+  // The meta line under an alert title.
   String alertMeta(SafetyAlert alert) {
     final time = switch (alert.timeStyle) {
       AlertTimeStyle.window when alert.validUntil != null =>
@@ -84,10 +79,11 @@ class UnitFormatter {
     return alert.zoneLabel.isEmpty ? time : '$time  •  ${alert.zoneLabel}';
   }
 
-  /// "Updated 6:15 AM  ·  Valid until 11:20 AM" on the detail header.
+  // Updated timestamp line on detail header.
   String alertValidity(SafetyAlert alert) {
     final updated = 'Updated ${clock(alert.issuedAt)}';
     if (alert.validUntil == null) return updated;
     return '$updated  ·  Valid until ${clock(alert.validUntil!)}';
   }
 }
+

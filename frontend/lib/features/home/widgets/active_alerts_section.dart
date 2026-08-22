@@ -1,3 +1,6 @@
+// File: lib/features/home/widgets/active_alerts_section.dart
+// Description: Active alerts list section component on the home screen displaying alert cards or a no-alerts status card.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,8 +13,9 @@ import '../../../models/safety_alert.dart';
 import '../../../widgets/hazard_icon.dart';
 import '../../../widgets/surface_card.dart';
 
-/// "Active Alerts" list, or the reassuring empty state when there are none.
+// Active Alerts list section or empty state card when there are none.
 class ActiveAlertsSection extends StatelessWidget {
+
   const ActiveAlertsSection({
     super.key,
     required this.alerts,

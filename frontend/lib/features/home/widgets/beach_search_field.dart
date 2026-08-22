@@ -1,13 +1,14 @@
+// File: lib/features/home/widgets/beach_search_field.dart
+// Description: Read-only search bar trigger widget on the home screen that opens the beach selection modal sheet on tap.
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/risk_theme.dart';
 
-/// The translucent "Search beaches" field over the backdrop.
-///
-/// Read-only and tap-to-open: the field itself is a button that raises the
-/// search sheet, which keeps the keyboard off the Home screen.
+// Translucent Search beaches button field over the backdrop.
 class BeachSearchField extends StatelessWidget {
+
   const BeachSearchField({super.key, required this.onTap});
 
   final VoidCallback onTap;

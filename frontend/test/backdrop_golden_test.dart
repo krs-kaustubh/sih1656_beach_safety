@@ -1,3 +1,6 @@
+// File: test/backdrop_golden_test.dart
+// Description: Golden UI test verifying background backdrop visual rendering across different beach risk levels.
+
 @Tags(['golden'])
 library;
 
@@ -14,10 +17,9 @@ import 'package:beach_safety/settings/settings_providers.dart';
 
 import 'support/test_settings.dart';
 
-/// Renders Home at each risk level so the painted backdrops can be reviewed
-/// without booting a device. Regenerate with:
-///   flutter test --update-goldens test/backdrop_golden_test.dart
+// Renders Home at each risk level so painted backdrops can be reviewed.
 void main() {
+
   for (final (name, beachId) in const [
     ('low', 3),
     ('moderate', 2),

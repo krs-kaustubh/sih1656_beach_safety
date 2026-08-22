@@ -1,18 +1,13 @@
+// File: lib/features/maps/map_geometry.dart
+// Description: GeoJSON geometry loader and data structures for country polygons, city labels, bounding boxes, and Web Mercator projections.
+
 import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
-/// The India region's countries and cities, loaded once from the bundled
-/// asset.
-///
-/// Source: Natural Earth 1:10m admin-0 countries, **India point-of-view**
-/// edition (`ne_10m_admin_0_countries_ind`), plus populated places. Public
-/// domain. The India POV edition matters: the default Natural Earth release
-/// draws Jammu & Kashmir on de-facto control lines rather than India's official
-/// boundary, which is the wrong depiction to ship in an Indian government
-/// context.
+// The India region's countries and cities, loaded from bundled assets (India point-of-view GeoJSON).
 @immutable
 class MapGeometry {
   MapGeometry({
@@ -21,14 +16,14 @@ class MapGeometry {
     required this.region,
   });
 
-  /// India first, then neighbours by descending area.
+  // India first, then neighbours by descending area.
   final List<CountryShape> countries;
 
   final List<CityLabel> cities;
 
-  /// The full extent the map covers — India plus enough of its neighbours to
-  /// give it context. Pan and zoom are bounded to this.
+  // The full extent the map covers.
   final GeoBounds region;
+
 
   static MapGeometry? _cached;
 
@@ -56,13 +51,13 @@ class MapGeometry {
     );
   }
 
-  /// India's own shape, used for the highlighted border.
+  // India's own shape, used for highlighted border.
   CountryShape get india =>
       countries.firstWhere((c) => c.isIndia, orElse: () => countries.first);
 
-  /// India's extent, which is what the map opens on. The wider [region] is
-  /// only reachable by zooming out.
+  // India's extent, which is what the map opens on.
   late final GeoBounds indiaBounds = _boundsOf(india);
+
 
   static GeoBounds _boundsOf(CountryShape country) {
     var west = 180.0, east = -180.0, south = 90.0, north = -90.0;

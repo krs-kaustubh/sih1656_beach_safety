@@ -1,3 +1,6 @@
+// File: lib/features/settings/settings_screen.dart
+// Description: Application settings screen allowing unit customization, alert severity filtering, default launch beach selection, and emergency contacts dialing.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,13 +11,9 @@ import '../../settings/settings_providers.dart';
 import '../../state/providers.dart';
 import 'emergency_contacts.dart';
 
-/// Settings: units, the beach the app opens on, which alerts to surface, and
-/// emergency numbers.
-///
-/// Every control here takes effect immediately and persists. Nothing on this
-/// screen is a placeholder — a switch that does nothing is worse than an
-/// absent one, especially with someone else holding the phone.
+// Settings screen for units, launch beach, alert filters, and emergency contacts.
 class SettingsScreen extends ConsumerWidget {
+
   const SettingsScreen({super.key});
 
   static const _surface = Color(0xFF12222E);

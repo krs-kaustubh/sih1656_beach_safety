@@ -1,3 +1,6 @@
+// File: test/map_golden_test.dart
+// Description: Golden UI visual regression test capturing rendered MapsScreen states with India geometry and beach markers.
+
 @Tags(['golden'])
 library;
 
@@ -17,9 +20,9 @@ import 'package:beach_safety/settings/settings_providers.dart';
 
 import 'support/test_settings.dart';
 
-/// Renders the Maps tab so the India outline, projection and markers can be
-/// reviewed without a device. See dart_test.yaml for how to run it.
+// Renders the Maps tab so India outline, projection and markers can be reviewed.
 void main() {
+
   testWidgets('maps tab renders India with beach markers', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 3.0;

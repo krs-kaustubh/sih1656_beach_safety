@@ -1,3 +1,6 @@
+// File: lib/features/maps/maps_screen.dart
+// Description: Interactive map tab screen rendering vector region boundaries, dark terrain texture overlays, risk-coded beach markers, and zoom controls.
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -12,14 +15,12 @@ import 'map_geometry.dart';
 import 'map_projection.dart';
 import 'terrain_map_painter.dart';
 
-/// Loads the bundled outlines once for the whole app.
+// Loads the bundled outlines once for the app.
 final mapGeometryProvider = FutureProvider<MapGeometry>(
   (ref) => MapGeometry.load(),
 );
 
-/// Decodes the relief texture once. Kept separate from the geometry so the
-/// map can draw as soon as the vectors are ready and fill in the terrain when
-/// the image arrives, rather than blocking on a 668 KB decode.
+// Decodes the relief texture once separately from geometry.
 final terrainImageProvider = FutureProvider<ui.Image>((ref) async {
   final data = await rootBundle.load('assets/geo/terrain.jpg');
   final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
@@ -27,12 +28,9 @@ final terrainImageProvider = FutureProvider<ui.Image>((ref) async {
   return frame.image;
 });
 
-/// The Maps tab: every monitored beach plotted on India, colour-coded by risk.
-///
-/// Pan and zoom are bounded to the country — there is nothing to see out in
-/// the empty ocean, and letting the map drift off into blank space is a common
-/// way for a demo to end up looking broken.
+// The Maps tab plotting monitored beaches on an interactive map.
 class MapsScreen extends ConsumerStatefulWidget {
+
   const MapsScreen({super.key});
 
   @override
@@ -85,14 +83,13 @@ class _MapsScreenState extends ConsumerState<MapsScreen> {
       ..translateByDouble(-scene.dx, -scene.dy, 0, 1);
   }
 
-  /// Frames India inside [viewport]. This is both the opening view and what
-  /// the "Fit India" control returns to — the wider region exists so the
-  /// neighbours are reachable by zooming out, not as the default framing.
+  // Frames India inside viewport.
   Matrix4 _indiaView(
     Size viewport,
     MapProjection projection,
     MapGeometry geometry,
   ) {
+
     final rect = projection.rectFor(geometry.indiaBounds);
     if (rect.width <= 0 || rect.height <= 0) return Matrix4.identity();
 
@@ -428,8 +425,7 @@ class _MapButton extends StatelessWidget {
   }
 }
 
-/// Details for the tapped marker, with the risk spelled out rather than left
-/// to the marker colour alone.
+// Details for the tapped marker.
 class _SelectedBeachCard extends StatelessWidget {
   const _SelectedBeachCard({required this.beach});
 
@@ -493,9 +489,9 @@ class _SelectedBeachCard extends StatelessWidget {
   }
 }
 
-/// Natural Earth is public domain and requires no credit, but naming the
-/// source keeps the boundary provenance visible.
+// Attribution label for map boundary sources.
 class _Attribution extends StatelessWidget {
+
   const _Attribution();
 
   @override

@@ -1,3 +1,6 @@
+// File: lib/features/home/home_screen.dart
+// Description: Main home dashboard displaying selected beach safety status, risk banner, environmental conditions grid, search bar launcher, and active safety alerts list.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -18,6 +21,7 @@ import 'widgets/home_header.dart';
 import 'widgets/risk_banner.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
+
   const HomeScreen({super.key});
 
   @override
@@ -133,9 +137,9 @@ class _HomeContent extends ConsumerWidget {
   }
 }
 
-/// Alerts failing should not blank the conditions the user came for, so this
-/// occupies only the alerts slot.
+// Alerts failing should not blank the conditions, so this occupies only the alerts slot.
 class _AlertsUnavailable extends StatelessWidget {
+
   const _AlertsUnavailable();
 
   @override

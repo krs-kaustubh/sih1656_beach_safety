@@ -1,3 +1,6 @@
+// File: test/beach_weather_test.dart
+// Description: Unit test suite verifying BeachWeather model parsing, severity vocabulary mapping, tide time handling, alerts extraction, and slug derivation.
+
 import 'dart:convert';
 
 import 'package:beach_safety/data/api_beach_repository.dart';
@@ -8,8 +11,9 @@ import 'package:beach_safety/models/risk_level.dart';
 import 'package:beach_safety/models/safety_alert.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Recorded from a real `/beaches/juhu/weather` response.
+// Recorded payload from a real /beaches/juhu/weather endpoint response.
 const _severePayload = '''
+
 {
   "location_id": "juhu",
   "location_name": "Juhu Beach, Mumbai",

@@ -1,10 +1,10 @@
-# Generates the Lehar app icons for both platforms.
-#   dart run flutter_launcher_icons
-#
-# The source art is a navy card with the shield emblem. Android's adaptive
-# icon uses the same navy as its background and the card inset into the safe
-# zone as its foreground, so the padding blends and no shape mask can clip
-# the emblem.
+# File: flutter_launcher_icons.yaml
+# Description: Configuration for generating Android adaptive icons and iOS app launcher icons for the beach safety app.
+
+# Generates app launcher icons for both platforms.
+# Command: dart run flutter_launcher_icons
+# The source art uses a navy card with the shield emblem. Android adaptive icon uses navy background with card inset into safe zone.
+
 flutter_launcher_icons:
   image_path: "assets/branding/icon.png"
 

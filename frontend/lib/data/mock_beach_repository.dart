@@ -1,16 +1,17 @@
+// File: lib/data/mock_beach_repository.dart
+// Description: In-memory mock implementation of BeachRepository with configurable artificial latency for testing and demo modes.
+
 import '../models/beach.dart';
 import '../models/safety_alert.dart';
 import 'beach_repository.dart';
 import 'mock_data.dart';
 
-/// In-memory repository backed by [MockData].
-///
-/// The artificial [latency] exists so loading states are actually exercised
-/// during development instead of only appearing against the real network.
+// In-memory repository backed by MockData with simulated latency for loading states.
 class MockBeachRepository implements BeachRepository {
   MockBeachRepository({this.latency = const Duration(milliseconds: 350)});
 
   final Duration latency;
+
 
   late final List<Beach> _beaches = MockData.beaches();
   late final List<SafetyAlert> _alerts = MockData.alerts();

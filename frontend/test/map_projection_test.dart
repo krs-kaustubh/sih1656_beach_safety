@@ -1,3 +1,6 @@
+// File: test/map_projection_test.dart
+// Description: Unit test suite verifying Web Mercator projection calculations, geographic bounds checking, and canvas coordinate mapping.
+
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -5,7 +8,7 @@ import 'package:beach_safety/features/maps/map_geometry.dart';
 import 'package:beach_safety/features/maps/map_projection.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// India's full extent, as shipped in assets/geo/india.json.
+// India's full extent bounding box for testing.
 const _india = GeoBounds(
   west: 68.1434,
   south: 6.7456,
@@ -14,6 +17,7 @@ const _india = GeoBounds(
 );
 
 void main() {
+
   group('Mercator', () {
     test('is symmetric about the equator', () {
       expect(Mercator.y(20), closeTo(-Mercator.y(-20), 1e-9));
@@ -119,9 +123,9 @@ void main() {
   });
 }
 
-/// Inverse Web Mercator, used only to construct a span that is square in
-/// projected units so the aspect-ratio test has something to compare against.
+// Inverse Web Mercator for testing square spans.
 double _inverseMercator(double y) {
+
   final phi = 2 * math.atan(math.exp(y * math.pi / 180)) - math.pi / 2;
   return phi * 180 / math.pi;
 }

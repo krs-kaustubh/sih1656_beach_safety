@@ -1,15 +1,15 @@
+// File: lib/core/theme/risk_theme.dart
+// Description: Dynamic theme system providing color palettes, asset bindings, and surface styling scoped to beach safety risk levels.
+
 import 'package:flutter/material.dart';
 
 import '../../models/risk_level.dart';
 
-/// The complete colour set for one risk level.
-///
-/// In the designs each risk level is not just an accent colour — it restyles
-/// the whole screen, including whether surfaces are light or dark. Grouping it
-/// into one object means a widget only ever reads `RiskTheme.of(context)`
-/// instead of branching on [RiskLevel] in a dozen places.
+// The complete colour set for one risk level.
+// Grouping it into one object means a widget only reads RiskTheme.of(context) instead of branching on RiskLevel.
 @immutable
 class RiskTheme {
+
   const RiskTheme({
     required this.level,
     required this.backdrop,
@@ -33,46 +33,45 @@ class RiskTheme {
 
   final RiskLevel level;
 
-  /// Vertical gradient standing in for the photographic backdrop.
+  // Vertical gradient standing in for the photographic backdrop.
   final List<Color> backdrop;
 
   final List<Color> bannerGradient;
   final Color bannerForeground;
   final Color bannerIconBackground;
 
-  /// Metric cards, alert cards, panels.
+  // Metric cards, alert cards, panels.
   final Color surface;
   final Color surfaceBorder;
 
   final Color textPrimary;
   final Color textSecondary;
 
-  /// Highlight colour: UV readout, active nav item, section accents.
+  // Highlight colour: UV readout, active nav item, section accents.
   final Color accent;
 
   final Color metricIcon;
 
-  /// Text drawn over the *top* of [backdrop], which is dark on every scene.
+  // Text drawn over the top of backdrop, which is dark on every scene.
   final Color headerForeground;
 
-  /// Text drawn further down the page, where the light scenes have faded to a
-  /// pale surface and [headerForeground] would be nearly invisible.
+  // Text drawn further down the page, where the light scenes have faded to a pale surface.
   final Color contentForeground;
 
-  /// Photograph behind Home for this risk level. `BackdropScenePainter` draws
-  /// the equivalent scene if the asset cannot be loaded.
+  // Photograph behind Home for this risk level.
   final String backdropAsset;
 
-  /// Solid header block at the top of the alert detail screen.
+  // Solid header block at the top of the alert detail screen.
   final Color detailHeader;
 
-  /// Page background behind the detail panel.
+  // Page background behind the detail panel.
   final Color detailBackdrop;
 
-  /// The panel holding the detail body.
+  // The panel holding the detail body.
   final Color detailSurface;
 
   final bool isDark;
+
 
   Color get onBackdropMuted => headerForeground.withValues(alpha: 0.72);
 
@@ -139,11 +138,8 @@ class RiskTheme {
     isDark: true,
   );
 
-  /// Severity colour for a single item (an alert row, a meter dot) shown on a
-  /// screen whose own theme may be a different risk level — a Moderate alert
-  /// listed on a High-risk Home screen still needs to read as amber.
-  ///
-  /// [onDark] lightens the colours so they keep contrast on dark surfaces.
+  // Severity colour for a single item shown on a screen whose own theme may be a different risk level.
+  // onDark lightens the colours so they keep contrast on dark surfaces.
   static Color accentFor(RiskLevel level, {required bool onDark}) =>
       switch ((level, onDark)) {
         (RiskLevel.low, false) => const Color(0xFF1B7F4F),
@@ -154,19 +150,13 @@ class RiskTheme {
         (RiskLevel.high, true) => const Color(0xFFE5484D),
       };
 
-  /// Light counterpart of this palette, used where the screen sits on a tinted
-  /// gradient rather than a photograph.
-  ///
-  /// The Alerts tab needs the severity to read at a glance without a
-  /// photographic backdrop competing with it, which means light surfaces and
-  /// dark text even at high risk. Keeping it as a variant of the same object
-  /// means the shared alert widgets need no changes — they still just read
-  /// `RiskTheme.of(context)`.
+  // Light counterpart of this palette, used where the screen sits on a tinted gradient rather than a photograph.
   RiskTheme get lightVariant => switch (level) {
         RiskLevel.low => _lowLight,
         RiskLevel.moderate => _moderateLight,
         RiskLevel.high => _highLight,
       };
+
 
   static const RiskTheme _lowLight = RiskTheme(
     level: RiskLevel.low,
@@ -240,18 +230,17 @@ class RiskTheme {
         RiskLevel.high => _high,
       };
 
-  /// Reads the risk theme provided by the nearest [RiskThemeScope].
-  ///
-  /// Defaults to the low-risk palette when no scope is present, which keeps
-  /// widget tests and previews from having to build a full screen.
+  // Reads the risk theme provided by the nearest RiskThemeScope.
+  // Defaults to the low-risk palette when no scope is present.
   static RiskTheme of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<RiskThemeScope>();
     return scope?.theme ?? _low;
   }
 }
 
-/// Makes a [RiskTheme] available to the subtree.
+// Makes a RiskTheme available to the subtree.
 class RiskThemeScope extends InheritedWidget {
+
   const RiskThemeScope({
     super.key,
     required this.theme,

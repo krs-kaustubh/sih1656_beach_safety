@@ -1,9 +1,11 @@
+// File: lib/widgets/hazard_icon.dart
+// Description: Reusable widget mapping AlertKind values to icon glyphs rendered inside tinted circular container badges.
+
 import 'package:flutter/material.dart';
 
 import '../models/safety_alert.dart';
 
-/// Maps an [AlertKind] to its glyph, keeping icon choice in one place so Home
-/// cards and the detail header cannot drift apart.
+// Maps an AlertKind to its corresponding icon glyph.
 IconData iconForAlertKind(AlertKind kind) => switch (kind) {
       AlertKind.ripCurrent => Icons.flag_rounded,
       AlertKind.uv => Icons.wb_sunny_outlined,
@@ -12,8 +14,9 @@ IconData iconForAlertKind(AlertKind kind) => switch (kind) {
       AlertKind.general => Icons.info_outline_rounded,
     };
 
-/// A glyph inside a tinted circle, as used on the alert cards.
+// A glyph inside a tinted circle container.
 class HazardIcon extends StatelessWidget {
+
   const HazardIcon({
     super.key,
     required this.kind,

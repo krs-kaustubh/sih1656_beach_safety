@@ -1,12 +1,12 @@
-"""Builds the Maps tab terrain texture from Natural Earth's hypsometric raster.
+# File: tool/build_terrain.py
+# Description: Tool script to reproject hypsometric raster elevation data to Web Mercator and generate dark terrain textures for the map screen.
 
-Crops the India region, reprojects it from equirectangular to Web Mercator so
-it lines up with the app's MapProjection, and darkens it for the app's
-dark-terrain look. Only land is kept — the app paints its own ocean and clips
-this texture to the vector coastline, which keeps coastlines crisp at any zoom.
-"""
+# Builds the Maps tab terrain texture from Natural Earth's hypsometric raster.
+# Crops the India region, reprojects it from equirectangular to Web Mercator, and darkens it.
+
 import numpy as np
 from PIL import Image
+
 
 Image.MAX_IMAGE_PIXELS = None
 

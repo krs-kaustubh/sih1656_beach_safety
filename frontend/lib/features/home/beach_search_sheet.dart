@@ -1,3 +1,6 @@
+// File: lib/features/home/beach_search_sheet.dart
+// Description: Modal bottom sheet providing search input and beach selection list to change the active location.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,11 +8,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/risk_theme.dart';
 import '../../state/providers.dart';
 
-/// Bottom sheet for picking a beach.
-///
-/// Selecting one writes to [selectedBeachIdProvider], which re-drives Home and
-/// Alerts together.
+// Bottom sheet modal for selecting a beach location.
 class BeachSearchSheet extends ConsumerStatefulWidget {
+
   const BeachSearchSheet({super.key});
 
   static Future<void> show(BuildContext context) => showModalBottomSheet(

@@ -1,3 +1,6 @@
+// File: lib/features/shell/app_shell.dart
+// Description: Main application scaffold managing tab navigation (Home, Alerts, Maps, Settings) and bottom navigation bar styling.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,13 +12,14 @@ import '../home/home_screen.dart';
 import '../maps/maps_screen.dart';
 import '../settings/settings_screen.dart';
 
-/// Root scaffold holding the four tabs and the bottom navigation bar.
+// Root scaffold holding the four tabs and bottom navigation bar.
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
 }
+
 
 class _AppShellState extends ConsumerState<AppShell> {
   int _index = 0;

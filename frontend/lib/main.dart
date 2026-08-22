@@ -1,4 +1,8 @@
+// File: lib/main.dart
+// Description: Application entry point initializing Flutter bindings, UI system overlay styles, settings storage, Riverpod state scope, and root widget tree.
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

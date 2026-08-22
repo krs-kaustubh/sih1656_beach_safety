@@ -1,10 +1,13 @@
+// File: lib/features/home/widgets/metric_card.dart
+// Description: Reusable metric card widget presenting individual environmental measurements with icon, value, unit label, and custom color overrides.
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/risk_theme.dart';
 import '../../../widgets/surface_card.dart';
 
-/// One reading in the conditions grid: icon, label, value and unit.
+// One reading in the conditions grid: icon, label, value and unit.
 class MetricCard extends StatelessWidget {
   const MetricCard({
     super.key,
@@ -19,16 +22,17 @@ class MetricCard extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  /// Already-formatted reading, or null when it is unavailable.
+  // Already-formatted reading, or null when unavailable.
   final String? value;
 
-  /// Trailing qualifier: "m", "km/h SW", "Low", "Extreme".
+  // Trailing qualifier (e.g. m, km/h SW, Low, Extreme).
   final String? unit;
 
-  /// Overrides the value colour — the designs tint the UV readout by band.
+  // Overrides the value colour — used for UV readout tinting.
   final Color? valueColor;
 
   final Color? iconColor;
+
 
   @override
   Widget build(BuildContext context) {

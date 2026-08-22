@@ -1,9 +1,12 @@
+// File: lib/models/beach.dart
+// Description: Data model representing a beach location, geographical coordinates, risk rating, environmental conditions, and JSON parsing logic.
+
 import 'package:flutter/foundation.dart';
 
 import 'conditions.dart';
 import 'risk_level.dart';
 
-/// A beach and its current safety picture.
+// A beach and its current safety picture.
 @immutable
 class Beach {
   const Beach({
@@ -22,15 +25,13 @@ class Beach {
 
   final int id;
 
-  /// The key the weather endpoint uses (`juhu`, `marina`, ...). Null on older
-  /// builds of the service, which did not send it.
+  // The key the weather endpoint uses (juhu, marina, etc.). Null on older builds of the service.
   final String? locationId;
 
-  /// Display name. The backend ships this as "Juhu Beach, Mumbai"; the designs
-  /// split it into a title and a region subtitle, which [fromJson] handles.
+  // Display name. The backend ships this as Juhu Beach, Mumbai; the designs split it into title and region subtitle.
   final String name;
 
-  /// Subtitle under the beach name, e.g. "Mumbai, West Coast".
+  // Subtitle under the beach name, e.g. Mumbai, West Coast.
   final String region;
 
   final double latitude;
@@ -38,15 +39,15 @@ class Beach {
   final RiskLevel riskLevel;
   final Conditions conditions;
 
-  /// Sentence shown inside the risk banner on Home.
+  // Sentence shown inside the risk banner on Home.
   final String riskSummary;
 
-  /// Which measurements pushed the rating up, e.g. `wave_height`. Lets the
-  /// banner explain the rating instead of only announcing a colour.
+  // Which measurements pushed the rating up, e.g. wave_height. Lets the banner explain the rating.
   final List<String> riskDrivers;
 
-  /// Which engine decided: `ai`, `rules`, or `unavailable`.
+  // Which engine decided: ai, rules, or unavailable.
   final String? riskEngine;
+
 
   factory Beach.fromJson(Map<String, dynamic> json) {
     final rawName = json['name'] as String? ?? 'Unknown Beach';

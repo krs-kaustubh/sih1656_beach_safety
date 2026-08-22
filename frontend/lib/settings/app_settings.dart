@@ -1,8 +1,11 @@
+// File: lib/settings/app_settings.dart
+// Description: User configuration options including unit choices (distance, speed, temperature), time format preferences, alert filtering levels, and default beach selections.
+
 import 'package:flutter/foundation.dart';
 
 import '../models/risk_level.dart';
 
-/// Unit for wave height.
+// Unit for wave height.
 enum DistanceUnit {
   metres('m', 'Metres'),
   feet('ft', 'Feet');
@@ -11,15 +14,15 @@ enum DistanceUnit {
   final String symbol;
   final String label;
 
-  /// Wave heights arrive from the backend in metres.
+  // Wave heights arrive from the backend in metres.
   double fromMetres(double metres) =>
       this == DistanceUnit.feet ? metres * 3.28084 : metres;
 
-  /// Feet need no decimal at beach-wave scale; metres do.
+  // Feet need no decimal at beach-wave scale; metres do.
   int get decimals => this == DistanceUnit.feet ? 0 : 1;
 }
 
-/// Unit for wind and current speed.
+// Unit for wind and current speed.
 enum SpeedUnit {
   kmh('km/h', 'Kilometres per hour'),
   knots('kn', 'Knots'),
@@ -29,7 +32,7 @@ enum SpeedUnit {
   final String symbol;
   final String label;
 
-  /// Wind arrives from the backend in km/h.
+  // Wind arrives from the backend in km/h.
   double fromKmh(double kmh) => switch (this) {
         SpeedUnit.kmh => kmh,
         SpeedUnit.knots => kmh * 0.539957,
@@ -56,18 +59,18 @@ enum TimeFormat {
   const TimeFormat(this.label, this.shortLabel, this.pattern);
   final String label;
 
-  /// Compact form, so this row's control matches the unit-symbol pills
-  /// instead of overflowing them.
+  // Compact form for unit-symbol pills.
   final String shortLabel;
 
-  /// `intl` pattern used for every clock in the app.
+  // Pattern used for every clock in the app.
   final String pattern;
+
 
   String get hourPattern =>
       this == TimeFormat.twelveHour ? 'h a' : 'HH:00';
 }
 
-/// Which alerts the Alerts tab and Home list should surface.
+// Which alerts the Alerts tab and Home list should surface.
 enum AlertSeverityFilter {
   all('All alerts', 'Show every advisory and warning'),
   moderateAndAbove('Moderate and above', 'Hide low-risk advisories'),
@@ -84,10 +87,7 @@ enum AlertSeverityFilter {
       };
 }
 
-/// Everything the user can configure.
-///
-/// Immutable so a change produces a new value the providers can diff, rather
-/// than mutating shared state that widgets might already be rendering.
+// Everything the user can configure. Immutable so changes produce new values.
 @immutable
 class AppSettings {
   const AppSettings({
@@ -105,8 +105,9 @@ class AppSettings {
   final TimeFormat timeFormat;
   final AlertSeverityFilter alertFilter;
 
-  /// Beach shown on launch. Null means "whichever the backend lists first".
+  // Beach shown on launch. Null means whichever the backend lists first.
   final int? defaultBeachId;
+
 
   static const defaults = AppSettings();
 

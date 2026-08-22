@@ -68,3 +68,10 @@ node_modules/
 dist/
 .next/
 out/
+
+# Personal prep notes, not part of the project
+judge_prep_qa.tex
+judge_prep_qa.pdf
+judge_prep_qa.aux
+judge_prep_qa.log
+judge_prep_qa.out
