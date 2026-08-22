@@ -8,6 +8,7 @@ import 'risk_level.dart';
 class Beach {
   const Beach({
     required this.id,
+    this.locationId,
     required this.name,
     required this.region,
     required this.latitude,
@@ -18,6 +19,10 @@ class Beach {
   });
 
   final int id;
+
+  /// The key the weather endpoint uses (`juhu`, `marina`, ...). Null on older
+  /// builds of the service, which did not send it.
+  final String? locationId;
 
   /// Display name. The backend ships this as "Juhu Beach, Mumbai"; the designs
   /// split it into a title and a region subtitle, which [fromJson] handles.
@@ -48,6 +53,7 @@ class Beach {
 
     return Beach(
       id: (json['id'] as num?)?.toInt() ?? -1,
+      locationId: json['location_id'] as String?,
       name: title,
       region: json['region'] as String? ?? derivedRegion,
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
@@ -66,6 +72,7 @@ class Beach {
   }) =>
       Beach(
         id: id,
+        locationId: locationId,
         name: name,
         region: region ?? this.region,
         latitude: latitude,

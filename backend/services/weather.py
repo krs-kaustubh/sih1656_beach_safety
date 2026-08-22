@@ -138,11 +138,46 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
     temp_c = float(weather_data.get("temperature_c", 29.0))
     sea_temp = marine_data.get("sea_temperature_c")
 
-    severity, risk_title, risk_desc = calculate_risk_profile(wave_height, wind_speed, uv_index)
+    # A source falling all the way through to its internal cache means we have
+    # no observation at all — those values are placeholders, not measurements.
+    # Grading them produced "Low Risk - Safe Conditions" with every provider
+    # down, which is the one thing a safety app must never say. Report the gap
+    # instead, and fail cautious rather than safe.
+    degraded = weather_source.startswith("Internal") or marine_source.startswith("Internal")
+    if degraded:
+        no_weather = weather_source.startswith("Internal")
+        no_marine = marine_source.startswith("Internal")
+        if no_weather and no_marine:
+            what = "Live readings"
+        elif no_weather:
+            what = "Live wind and UV readings"
+        else:
+            what = "Live wave and tide readings"
+
+        severity = SeverityModeEnum.INTERMEDIATE
+        risk_title = "Conditions Unavailable"
+        risk_desc = (
+            f"{what} could not be retrieved, so conditions cannot be assessed. "
+            "Treat the water as unknown and check with lifeguards on site "
+            "before entering."
+        )
+    else:
+        severity, risk_title, risk_desc = calculate_risk_profile(
+            wave_height, wind_speed, uv_index
+        )
 
     # 5. Active Alerts Construction
     alerts: List[WeatherAlert] = []
-    if severity == SeverityModeEnum.SEVERE:
+    if degraded:
+        alerts.append(
+            WeatherAlert(
+                alert_type="Data Unavailable",
+                title="Live conditions could not be retrieved",
+                issued_time=now_iso,
+                location_scope=coords.name,
+            )
+        )
+    if not degraded and severity == SeverityModeEnum.SEVERE:
         alerts.append(
             WeatherAlert(
                 alert_type="Hazardous Swell & Gale Alert",
@@ -151,7 +186,7 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
                 location_scope=coords.name,
             )
         )
-    if uv_index >= 8.0:
+    if not degraded and uv_index >= 8.0:
         alerts.append(
             WeatherAlert(
                 alert_type="UV Radiation Warning",
