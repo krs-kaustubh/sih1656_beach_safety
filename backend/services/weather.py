@@ -4,7 +4,9 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from core.config import LOCATION_MAP, LocationCoords, LocationEnum, settings
+from schemas.risk import SeverityMode
 from schemas.weather import BeachWeatherResponse, SeverityModeEnum, WeatherAlert
+from services.risk_engine import evaluate_risk
 
 logger = logging.getLogger("weather_service")
 
@@ -56,6 +58,19 @@ def calculate_risk_profile(wave_height: float, wind_speed_kmh: float, uv_index: 
             "Low Risk - Safe Conditions",
             "Calm water conditions and favorable weather. Safe for recreational beach activities.",
         )
+
+
+def _to_response_severity(mode: SeverityMode) -> SeverityModeEnum:
+    """Collapses the engine five bands onto the response three.
+
+    Anything above Normal is a caution and only the engine top band is
+    Severe, so a rating is never softened on the way out.
+    """
+    if mode == SeverityMode.NORMAL:
+        return SeverityModeEnum.NORMAL
+    if mode == SeverityMode.SEVERE:
+        return SeverityModeEnum.SEVERE
+    return SeverityModeEnum.INTERMEDIATE
 
 
 async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
@@ -155,6 +170,8 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
             what = "Live wave and tide readings"
 
         severity = SeverityModeEnum.INTERMEDIATE
+        triggered = []
+        engine = "unavailable"
         risk_title = "Conditions Unavailable"
         risk_desc = (
             f"{what} could not be retrieved, so conditions cannot be assessed. "
@@ -162,9 +179,32 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
             "before entering."
         )
     else:
-        severity, risk_title, risk_desc = calculate_risk_profile(
-            wave_height, wind_speed, uv_index
+        # The risk engine tries a model first and falls back to the same
+        # thresholds when there is no key, the call is slow, or the answer
+        # fails validation against those thresholds. Either way it returns
+        # an explanation of what drove the rating.
+        assessment = await evaluate_risk(
+            wave_height=wave_height,
+            wind_speed=wind_speed,
+            # Real swell, which is a different measurement from wave height.
+            # Passing wave height here double-counted one reading against two
+            # rules and inflated the rating. Unknown swell contributes zero
+            # rather than inflating.
+            swell=float(marine_data.get("swell_height_m") or 0.0),
+            uv_index=uv_index,
+            # No provider supplies live water quality. The roster carries a
+            # value, but it is a static fixture, and letting a fixture drive
+            # a live rating is the same defect as grading placeholder
+            # weather. "Unknown" matches no hazard rule, so it contributes
+            # nothing rather than contributing something invented.
+            water_quality="Unknown",
+            location_name=coords.name,
         )
+        severity = _to_response_severity(assessment.severity_mode)
+        risk_title = assessment.risk_title
+        risk_desc = assessment.reasoning_summary
+        triggered = list(assessment.triggered_parameters)
+        engine = assessment.source
 
     # 5. Active Alerts Construction
     alerts: List[WeatherAlert] = []
@@ -206,6 +246,8 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
         severity_mode=severity,
         risk_title=risk_title,
         risk_description=risk_desc,
+        triggered_parameters=triggered,
+        risk_engine=engine,
         temperature_c=round(temp_c, 1),
         sea_temperature_c=round(float(sea_temp), 1) if sea_temp is not None else None,
         wave_height=round(wave_height, 2),
@@ -377,7 +419,7 @@ async def _fetch_openmeteo_marine(coords: LocationCoords) -> Dict[str, Any]:
             params={
                 "latitude": coords.lat,
                 "longitude": coords.lon,
-                "current": "wave_height,sea_surface_temperature",
+                "current": "wave_height,swell_wave_height,sea_surface_temperature",
                 "hourly": "sea_level_height_msl",
                 "timezone": "Asia/Kolkata",
                 "forecast_days": 2,
@@ -390,6 +432,7 @@ async def _fetch_openmeteo_marine(coords: LocationCoords) -> Dict[str, Any]:
 
         result: Dict[str, Any] = {
             "wave_height_m": current.get("wave_height", 1.1),
+            "swell_height_m": current.get("swell_wave_height"),
             "sea_temperature_c": current.get("sea_surface_temperature"),
         }
         # The series is in Asia/Kolkata, so compare against local wall time.

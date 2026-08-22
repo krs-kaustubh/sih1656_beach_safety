@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Literal
 from enum import Enum
 
 class SeverityMode(str, Enum):
@@ -16,6 +16,11 @@ class AlertItem(BaseModel):
 
 class RiskAssessmentResponse(BaseModel):
     severity_mode: SeverityMode
+
+    # "ai" when a model's assessment passed validation against the
+    # deterministic thresholds; "rules" when the thresholds decided.
+    source: Literal["ai", "rules"] = "rules"
+
     risk_title: str = Field(..., description="e.g. High Risk")
     reasoning_summary: str = Field(..., description="2-sentence natural explanation of the risk for UI display.")
     triggered_parameters: List[str] = Field(..., description="e.g. ['wave_height', 'wind_speed']")

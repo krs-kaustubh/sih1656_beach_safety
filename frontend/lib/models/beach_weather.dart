@@ -22,6 +22,8 @@ class BeachWeather {
     required this.riskLevel,
     required this.riskTitle,
     required this.riskDescription,
+    required this.triggeredParameters,
+    required this.riskEngine,
     required this.conditions,
     required this.alerts,
   });
@@ -42,6 +44,12 @@ class BeachWeather {
   final RiskLevel riskLevel;
   final String riskTitle;
   final String riskDescription;
+
+  /// Measurements that pushed the rating up.
+  final List<String> triggeredParameters;
+
+  /// `ai`, `rules`, or `unavailable`.
+  final String riskEngine;
   final Conditions conditions;
   final List<WeatherAlertPayload> alerts;
 
@@ -61,6 +69,11 @@ class BeachWeather {
       riskLevel: RiskLevel.fromApi(json['severity_mode'] as String?),
       riskTitle: json['risk_title'] as String? ?? '',
       riskDescription: json['risk_description'] as String? ?? '',
+      triggeredParameters:
+          (json['triggered_parameters'] as List<dynamic>? ?? const [])
+              .map((e) => e.toString())
+              .toList(growable: false),
+      riskEngine: json['risk_engine'] as String? ?? 'rules',
       conditions: Conditions(
         waveHeightMeters: asDouble(json['wave_height']) ?? 0,
         windSpeedKph: asDouble(json['wind_speed']),
@@ -119,6 +132,8 @@ class BeachWeather {
         riskLevel: riskLevel,
         conditions: conditions.copyWith(waterQuality: beach.conditions.waterQuality),
         riskSummary: riskDescription,
+        riskDrivers: triggeredParameters,
+        riskEngine: riskEngine,
       );
 
   /// Alerts in the app's own shape.
