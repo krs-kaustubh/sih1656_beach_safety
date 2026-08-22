@@ -42,18 +42,6 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setAlertChannel(AlertChannel channel) =>
       _update(state.copyWith(alertChannel: channel));
 
-  // Digits only; the country code is part of the number. Empty clears it,
-  // which also disarms WhatsApp delivery without silently changing channel.
-  Future<void> setWhatsappNumber(String? number) {
-    final digits = (number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-    return _update(
-      state.copyWith(
-        whatsappNumber: digits.isEmpty ? null : digits,
-        clearWhatsappNumber: digits.isEmpty,
-      ),
-    );
-  }
-
   Future<void> setDefaultBeach(int? beachId) => _update(
         state.copyWith(
           defaultBeachId: beachId,

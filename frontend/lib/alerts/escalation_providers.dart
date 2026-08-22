@@ -3,7 +3,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/api_beach_repository.dart';
 import '../models/beach.dart';
 import '../models/risk_level.dart';
 import '../settings/app_settings.dart';
@@ -13,11 +12,8 @@ import 'alert_dispatcher.dart';
 import 'escalation.dart';
 
 // Overridden in tests with a recording dispatcher.
-final alertDispatcherProvider = Provider<AlertDispatcher>((ref) {
-  final dispatcher = ChannelAlertDispatcher();
-  ref.onDispose(dispatcher.dispose);
-  return dispatcher;
-});
+final alertDispatcherProvider =
+    Provider<AlertDispatcher>((ref) => ChannelAlertDispatcher());
 
 // Remembers the last rating seen per beach for the life of the app.
 final escalationTrackerProvider = Provider<EscalationTracker>(
@@ -65,26 +61,19 @@ class EscalationWatcher extends Notifier<RiskLevel?> {
 final escalationWatcherProvider =
     NotifierProvider<EscalationWatcher, RiskLevel?>(EscalationWatcher.new);
 
-// Sends a sample alert through the current channel, so the user can confirm
-// the setup works without waiting for the sea to turn dangerous.
-//
-// [beach] supplies the slug the WhatsApp channel needs; the notification
-// channel ignores it.
+// Sends a sample alert, so the user can confirm the setup works without
+// waiting for the sea to turn dangerous.
 Future<bool> sendTestAlert({
   required AlertDispatcher dispatcher,
   required AppSettings settings,
-  required Beach? beach,
 }) {
   if (!settings.canDeliverAlerts) return Future.value(false);
 
   return dispatcher.send(
-        EscalationMessage(
-          beachSlug: beach == null ? null : ApiBeachRepository.slugFor(beach),
-          title: 'Lehar test alert',
-          body: 'Your alerts are set up correctly. '
-              'This is not a safety warning.',
-          isTest: true,
-        ),
-        settings,
-      );
+    const EscalationMessage(
+      title: 'Lehar test alert',
+      body: 'Your alerts are set up correctly. This is not a safety warning.',
+    ),
+    settings,
+  );
 }

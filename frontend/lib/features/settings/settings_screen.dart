@@ -116,8 +116,6 @@ class SettingsScreen extends ConsumerWidget {
                     groupValue: settings.alertChannel,
                     onChanged: controller.setAlertChannel,
                   ),
-                if (settings.alertChannel.needsPhoneNumber)
-                  const _WhatsappNumberField(),
                 if (settings.alertChannel != AlertChannel.off)
                   const _TestAlertRow(),
               ],
@@ -499,88 +497,6 @@ class _ContactRow extends StatelessWidget {
 }
 
 
-// Collects the WhatsApp number, including country code.
-//
-// Stateful because the field needs its own controller: rebuilding a
-// TextField from settings on every keystroke would fight the cursor.
-class _WhatsappNumberField extends ConsumerStatefulWidget {
-  const _WhatsappNumberField();
-
-  @override
-  ConsumerState<_WhatsappNumberField> createState() =>
-      _WhatsappNumberFieldState();
-}
-
-class _WhatsappNumberFieldState extends ConsumerState<_WhatsappNumberField> {
-  late final TextEditingController _controller = TextEditingController(
-    text: ref.read(settingsProvider).whatsappNumber ?? '',
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final saved = ref.watch(settingsProvider).whatsappNumber;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Insets.md,
-        0,
-        Insets.md,
-        Insets.md,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.phone,
-            style: const TextStyle(
-              fontSize: 15,
-              color: SettingsScreen._text,
-            ),
-            decoration: InputDecoration(
-              labelText: 'WhatsApp number',
-              // Spelling out the country code prevents the commonest setup
-              // failure: a local number WAHA cannot route.
-              hintText: '919876543210',
-              helperText: 'Include the country code, digits only.',
-              labelStyle: const TextStyle(color: SettingsScreen._muted),
-              hintStyle: TextStyle(
-                color: SettingsScreen._muted.withValues(alpha: 0.5),
-              ),
-              helperStyle: const TextStyle(
-                fontSize: 11.5,
-                color: SettingsScreen._muted,
-              ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(Radii.chip),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            onChanged: (value) =>
-                ref.read(settingsProvider.notifier).setWhatsappNumber(value),
-          ),
-          if (saved == null || saved.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: Insets.sm),
-              child: Text(
-                'No number saved, so no WhatsApp alerts will be sent.',
-                style: TextStyle(fontSize: 12, color: Color(0xFFE8B44A)),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 // Sends one alert through the chosen channel so the user can see it arrive.
 class _TestAlertRow extends ConsumerStatefulWidget {
   const _TestAlertRow();
@@ -597,7 +513,6 @@ class _TestAlertRowState extends ConsumerState<_TestAlertRow> {
     final delivered = await sendTestAlert(
       dispatcher: ref.read(alertDispatcherProvider),
       settings: ref.read(settingsProvider),
-      beach: ref.read(selectedBeachProvider).value,
     );
     if (!mounted) return;
     setState(() => _sending = false);
@@ -609,9 +524,6 @@ class _TestAlertRowState extends ConsumerState<_TestAlertRow> {
           delivered
               ? 'Test alert sent.'
               : switch (channel) {
-                  AlertChannel.whatsapp =>
-                    'Could not send. Check the number and that the service '
-                        'is reachable.',
                   AlertChannel.notification =>
                     'Could not send. Notifications are blocked for Lehar in '
                         'Android settings.',

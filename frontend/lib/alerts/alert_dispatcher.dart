@@ -1,38 +1,19 @@
 // File: lib/alerts/alert_dispatcher.dart
-// Description: Delivery of escalation alerts through the channel the user chose — an Android notification on this device, or a WhatsApp message via the backend gateway.
+// Description: Delivery of escalation alerts as an Android notification on this device.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../data/api_beach_repository.dart';
-import '../data/api_client.dart';
 import '../models/beach.dart';
 import '../settings/app_settings.dart';
 
 // What the user is told when a beach turns dangerous.
-//
-// Built once and shared by both channels so the WhatsApp message and the
-// notification cannot drift apart into two different accounts of the same
-// event.
 @immutable
 class EscalationMessage {
-  const EscalationMessage({
-    required this.title,
-    required this.body,
-    this.beachSlug,
-    this.isTest = false,
-  });
+  const EscalationMessage({required this.title, required this.body});
 
   final String title;
   final String body;
-
-  // The weather endpoint's key for this beach. Needed only by the WhatsApp
-  // channel, which asks the service to compose and send the message.
-  final String? beachSlug;
-
-  // A test alert skips the service's severity check and says plainly that it
-  // is a test, so confirming the setup cannot be mistaken for a real warning.
-  final bool isTest;
 
   factory EscalationMessage.forBeach(Beach beach) {
     final drivers = beach.riskDrivers
@@ -47,7 +28,6 @@ class EscalationMessage {
         : 'Conditions have deteriorated.';
 
     return EscalationMessage(
-      beachSlug: ApiBeachRepository.slugFor(beach),
       title: '${beach.name}: now High Risk',
       body: drivers.isEmpty
           ? reason
@@ -65,8 +45,6 @@ class EscalationMessage {
         'water_quality' => 'water quality',
         final other => other.replaceAll('_', ' '),
       };
-
-  String get whatsappText => '⚠️ $title\n\n$body';
 }
 
 // Sends an escalation alert somewhere. Split out from the delivery details so
@@ -87,16 +65,12 @@ const _androidChannel = AndroidNotificationDetails(
   styleInformation: BigTextStyleInformation(''),
 );
 
-// Routes an alert to whichever channel the user picked.
+// Delivers an alert as an Android notification.
 class ChannelAlertDispatcher implements AlertDispatcher {
-  ChannelAlertDispatcher({
-    FlutterLocalNotificationsPlugin? notifications,
-    ApiClient? client,
-  })  : _notifications = notifications ?? FlutterLocalNotificationsPlugin(),
-        _client = client ?? ApiClient();
+  ChannelAlertDispatcher({FlutterLocalNotificationsPlugin? notifications})
+      : _notifications = notifications ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _notifications;
-  final ApiClient _client;
 
   bool _initialised = false;
 
@@ -138,21 +112,8 @@ class ChannelAlertDispatcher implements AlertDispatcher {
               const NotificationDetails(android: _androidChannel),
         );
         return true;
-
-      case AlertChannel.whatsapp:
-        final number = settings.whatsappNumber;
-        if (number == null || number.isEmpty) return false;
-        final slug = message.beachSlug;
-        if (slug == null) return false;
-        return _client.postWhatsappEscalation(
-          slug: slug,
-          chatId: '$number@c.us',
-          test: message.isTest,
-        );
     }
   }
 
   static const _escalationNotificationId = 1001;
-
-  void dispose() => _client.dispose();
 }

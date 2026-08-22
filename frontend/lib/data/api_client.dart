@@ -55,33 +55,5 @@ class ApiClient {
     }
   }
 
-  // Asks the service to send a WhatsApp escalation warning for a beach.
-  //
-  // The message text is composed server-side, so this only names the beach and
-  // the recipient. Returns whether the service accepted it for delivery; a
-  // false here is normal when conditions eased before the call landed.
-  Future<bool> postWhatsappEscalation({
-    required String slug,
-    required String chatId,
-    bool test = false,
-  }) async {
-    final uri = Uri.parse('$_baseUrl/beaches/$slug/notify-escalation').replace(
-      queryParameters: {
-        'chat_id': chatId,
-        if (test) 'test': 'true',
-      },
-    );
-    try {
-      final response = await _client.post(uri).timeout(_timeout);
-      if (response.statusCode >= 400) return false;
-      final body = jsonDecode(response.body);
-      return body is Map<String, dynamic> && body['sent'] == true;
-    } on SocketException {
-      return false;
-    } on FormatException {
-      return false;
-    }
-  }
-
   void dispose() => _client.close();
 }

@@ -21,7 +21,6 @@ class SettingsStore {
   static const _timeFormat = 'settings.timeFormat';
   static const _alertFilter = 'settings.alertFilter';
   static const _alertChannel = 'settings.alertChannel';
-  static const _whatsappNumber = 'settings.whatsappNumber';
   static const _defaultBeach = 'settings.defaultBeachId';
 
   T _readEnum<T extends Enum>(String key, List<T> values, T fallback) {
@@ -45,7 +44,6 @@ class SettingsStore {
             _alertFilter, AlertSeverityFilter.values, AlertSeverityFilter.all),
         alertChannel:
             _readEnum(_alertChannel, AlertChannel.values, AlertChannel.off),
-        whatsappNumber: _prefs.getString(_whatsappNumber),
         defaultBeachId: _prefs.getInt(_defaultBeach),
       );
 
@@ -57,10 +55,6 @@ class SettingsStore {
       _prefs.setString(_timeFormat, settings.timeFormat.name),
       _prefs.setString(_alertFilter, settings.alertFilter.name),
       _prefs.setString(_alertChannel, settings.alertChannel.name),
-      if (settings.whatsappNumber case final number?)
-        _prefs.setString(_whatsappNumber, number)
-      else
-        _prefs.remove(_whatsappNumber),
       if (settings.defaultBeachId != null)
         _prefs.setInt(_defaultBeach, settings.defaultBeachId!)
       else

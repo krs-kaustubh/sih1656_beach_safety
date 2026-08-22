@@ -163,9 +163,6 @@ void main() {
       expect(message.body, isNot(contains('Driven by')));
     });
 
-    test('carries the slug the WhatsApp channel needs', () {
-      expect(EscalationMessage.forBeach(_beach()).beachSlug, 'juhu');
-    });
   });
 
   group('sendTestAlert', () {
@@ -175,30 +172,20 @@ void main() {
       final sent = await sendTestAlert(
         dispatcher: dispatcher,
         settings: const AppSettings(alertChannel: AlertChannel.off),
-        beach: _beach(),
       );
 
       expect(sent, isFalse);
       expect(dispatcher.sent, isEmpty);
     });
 
-    test('sends nothing when WhatsApp is chosen but no number is saved', () {
-      // The channel is selected but inert — the case the settings screen warns
-      // about, and the one most likely to look like a silent failure.
-      const settings = AppSettings(alertChannel: AlertChannel.whatsapp);
-      expect(settings.canDeliverAlerts, isFalse);
-    });
-
-    test('marks the test message as a test', () async {
+    test('says plainly that it is a test', () async {
       final dispatcher = _RecordingDispatcher();
 
       await sendTestAlert(
         dispatcher: dispatcher,
         settings: const AppSettings(alertChannel: AlertChannel.notification),
-        beach: _beach(),
       );
 
-      expect(dispatcher.sent.single.isTest, isTrue);
       expect(dispatcher.sent.single.body, contains('not a safety warning'));
     });
   });
@@ -230,25 +217,5 @@ void main() {
       expect(settings.canDeliverAlerts, isTrue);
     });
 
-    test('whatsapp is deliverable once a number is saved', () {
-      const settings = AppSettings(
-        alertChannel: AlertChannel.whatsapp,
-        whatsappNumber: '919876543210',
-      );
-      expect(settings.canDeliverAlerts, isTrue);
-    });
-
-    test('clearing the number is distinguishable from leaving it alone', () {
-      const withNumber = AppSettings(
-        alertChannel: AlertChannel.whatsapp,
-        whatsappNumber: '919876543210',
-      );
-
-      expect(withNumber.copyWith().whatsappNumber, '919876543210');
-      expect(
-        withNumber.copyWith(clearWhatsappNumber: true).whatsappNumber,
-        isNull,
-      );
-    });
   });
 }
