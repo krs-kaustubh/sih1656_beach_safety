@@ -110,18 +110,16 @@ class ApiBeachRepository implements BeachRepository {
     return reading;
   }
 
-  /// Derives the weather endpoint's slug from a roster entry.
+  /// The weather endpoint's key for a beach.
   ///
-  /// The two endpoints disagree on how a beach is identified: `/beaches` keys
-  /// on an integer id, the weather endpoint on a slug from a fixed enum
-  /// (`juhu`, `marina`, `radhanagar`). Nothing in the API connects them, so it
-  /// is derived from the name — "Juhu Beach, Mumbai" gives "juhu".
-  ///
-  /// This is the weakest link in the integration and will break on the first
-  /// beach whose slug is not its first word. The real fix is for `/beaches` to
-  /// return the slug; until then a wrong guess degrades to fixture data for
-  /// that beach rather than an error.
+  /// The roster now carries `location_id`, so this is normally just read off
+  /// the response. The name-derived fallback remains for older builds of the
+  /// service that predate that field; it works only while a beach's slug is
+  /// its first word, which is why the service sending it is the real fix.
   static String? slugFor(Beach beach) {
+    final provided = beach.locationId?.trim();
+    if (provided != null && provided.isNotEmpty) return provided;
+
     final first = beach.name.split(RegExp(r'[\s,]+')).firstOrNull;
     if (first == null || first.isEmpty) return null;
     return first.toLowerCase();

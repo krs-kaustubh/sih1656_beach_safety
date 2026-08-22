@@ -15,6 +15,77 @@ Output Format: Must strictly adhere to the requested JSON schema."""
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 TIMEOUT_SECONDS = 0.8  # 800ms timeout
 
+# Ordered least to most hazardous, so two assessments can be compared.
+SEVERITY_ORDER: List[SeverityMode] = [
+    SeverityMode.NORMAL,
+    SeverityMode.INTERMEDIATE_LOW,
+    SeverityMode.INTERMEDIATE_MED,
+    SeverityMode.INTERMEDIATE_HIGH,
+    SeverityMode.SEVERE,
+]
+
+KNOWN_PARAMETERS = {
+    "wave_height",
+    "wind_speed",
+    "swell",
+    "uv_index",
+    "water_quality",
+}
+
+
+def validate_ai_assessment(
+    ai: RiskAssessmentResponse,
+    rules: RiskAssessmentResponse,
+) -> Optional[str]:
+    """Checks an LLM assessment against the deterministic one.
+
+    Returns None if the assessment is usable, or a short reason to reject it.
+
+    The rule that matters is asymmetric: the model may be *more* cautious than
+    the thresholds, never less. A model is free to notice a combination the
+    thresholds miss and escalate, but it must not talk the risk down — an LLM
+    calling 4 m surf "Normal" is exactly the failure this guards, and the
+    deterministic answer is the floor.
+    """
+    try:
+        ai_rank = SEVERITY_ORDER.index(ai.severity_mode)
+        rules_rank = SEVERITY_ORDER.index(rules.severity_mode)
+    except ValueError:
+        return f"unknown severity {ai.severity_mode!r}"
+
+    if ai_rank < rules_rank:
+        return (
+            f"less cautious than the thresholds "
+            f"({ai.severity_mode.value} < {rules.severity_mode.value})"
+        )
+
+    summary = (ai.reasoning_summary or "").strip()
+    if not summary:
+        return "empty reasoning"
+    if len(summary) > 400:
+        return f"reasoning too long ({len(summary)} chars)"
+
+    title = (ai.risk_title or "").strip()
+    if not title:
+        return "empty risk title"
+    if len(title) > 80:
+        return f"risk title too long ({len(title)} chars)"
+
+    unknown = set(ai.triggered_parameters) - KNOWN_PARAMETERS
+    if unknown:
+        return f"invented parameters {sorted(unknown)}"
+
+    # Anything the thresholds flagged must still be acknowledged; silently
+    # dropping a triggered hazard is how a real warning goes missing.
+    dropped = set(rules.triggered_parameters) - set(ai.triggered_parameters)
+    if dropped:
+        return f"dropped triggered parameters {sorted(dropped)}"
+
+    if any(not (a.title or "").strip() for a in ai.active_alerts):
+        return "alert with no title"
+
+    return None
+
 
 def fallback_rules_risk_assessment(
     wave_height: float,
@@ -157,11 +228,25 @@ def fallback_rules_risk_assessment(
             "Excellent and safe environment for all recreational beach activities."
         )
 
+    # The alert thresholds above are stricter than the classification bands, so
+    # a rating could come back above Normal with nothing listed as driving it —
+    # leaving the app to show a caution it could not explain. Fill in whatever
+    # actually crossed a band threshold.
+    if severity != SeverityMode.NORMAL and not triggered:
+        contributing = {
+            "wave_height": wave_height >= 1.0,
+            "wind_speed": wind_speed >= 20.0,
+            "swell": swell >= 1.5,
+            "uv_index": uv_index >= 6.0,
+        }
+        triggered = [name for name, crossed in contributing.items() if crossed]
+
     return RiskAssessmentResponse(
         severity_mode=severity,
+        source="rules",
         risk_title=risk_title,
         reasoning_summary=reasoning,
-        triggered_parameters=list(set(triggered)),
+        triggered_parameters=sorted(set(triggered)),
         active_alerts=alerts,
     )
 
@@ -180,9 +265,7 @@ async def evaluate_risk(
     Enforces an 800ms timeout and falls back to a deterministic rules engine if unavailable or timed out.
     """
     # Resolve API Key
-    resolved_api_key = api_key or getattr(settings, "GROQ_API_KEY", None) or getattr(settings.providers, "GROQ_API_KEY", None)
-    if not resolved_api_key and hasattr(settings, "OPENAI_API_KEY"):
-        resolved_api_key = getattr(settings, "OPENAI_API_KEY", None)
+    resolved_api_key = api_key or settings.providers.get_llm_key()
 
     # Check environment variable directly if not found in settings
     import os
@@ -200,8 +283,14 @@ async def evaluate_risk(
             location_name=location_name,
         )
 
-    endpoint_url = os.getenv("GROQ_API_BASE_URL", "https://api.groq.com/openai/v1/chat/completions")
-    model_name = os.getenv("GROQ_MODEL", DEFAULT_MODEL)
+    endpoint_url = (
+        settings.providers.GROQ_API_BASE_URL
+        or os.getenv("GROQ_API_BASE_URL")
+        or "https://api.groq.com/openai/v1/chat/completions"
+    )
+    model_name = (
+        settings.providers.GROQ_MODEL or os.getenv("GROQ_MODEL") or DEFAULT_MODEL
+    )
 
     user_payload = {
         "location": location_name or "Coastal Beach",
@@ -237,20 +326,9 @@ async def evaluate_risk(
         "temperature": 0.1,
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
-            response = await client.post(endpoint_url, headers=headers, json=body)
-            response.raise_for_status()
-            data = response.json()
-            raw_content = data["choices"][0]["message"]["content"]
-            parsed_json = json.loads(raw_content)
-            return RiskAssessmentResponse.model_validate(parsed_json)
-    except httpx.TimeoutException:
-        logger.warning("LLM risk assessment call timed out (>800ms). Falling back to rules engine.")
-    except Exception as exc:
-        logger.warning(f"LLM risk assessment failed ({type(exc).__name__}: {exc}). Falling back to rules engine.")
-
-    return fallback_rules_risk_assessment(
+    # Computed up front: it is both the fallback and the yardstick the model's
+    # answer is judged against.
+    rules = fallback_rules_risk_assessment(
         wave_height=wave_height,
         wind_speed=wind_speed,
         swell=swell,
@@ -258,3 +336,28 @@ async def evaluate_risk(
         water_quality=water_quality,
         location_name=location_name,
     )
+
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
+            response = await client.post(endpoint_url, headers=headers, json=body)
+            response.raise_for_status()
+            data = response.json()
+            raw_content = data["choices"][0]["message"]["content"]
+            parsed_json = json.loads(raw_content)
+            assessment = RiskAssessmentResponse.model_validate(parsed_json)
+    except httpx.TimeoutException:
+        logger.warning("LLM risk assessment timed out (>800ms). Using rules engine.")
+        return rules
+    except Exception as exc:
+        logger.warning(
+            f"LLM risk assessment failed ({type(exc).__name__}: {exc}). Using rules engine."
+        )
+        return rules
+
+    rejection = validate_ai_assessment(assessment, rules)
+    if rejection:
+        logger.warning(f"Rejected LLM risk assessment: {rejection}. Using rules engine.")
+        return rules
+
+    logger.info("Using LLM risk assessment (passed validation against thresholds).")
+    return assessment.model_copy(update={"source": "ai"})

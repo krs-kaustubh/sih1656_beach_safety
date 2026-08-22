@@ -168,7 +168,18 @@ void main() {
   group('slug derivation', () {
     Beach named(String name) => Beach.fromJson({'id': 1, 'name': name});
 
-    test('derives the weather slug from roster names', () {
+    test('prefers the slug the service sends', () {
+      // The roster now carries location_id. Guessing from the name only
+      // survives while a beach's slug is its first word.
+      final withSlug = Beach.fromJson({
+        'id': 9,
+        'location_id': 'kovalam',
+        'name': 'Lighthouse Beach, Kerala',
+      });
+      expect(ApiBeachRepository.slugFor(withSlug), 'kovalam');
+    });
+
+    test('falls back to the name when the service sends no slug', () {
       expect(ApiBeachRepository.slugFor(named('Juhu Beach, Mumbai')), 'juhu');
       expect(ApiBeachRepository.slugFor(named('Marina Beach, Chennai')), 'marina');
       expect(

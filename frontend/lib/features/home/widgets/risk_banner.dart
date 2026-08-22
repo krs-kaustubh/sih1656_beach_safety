@@ -66,11 +66,71 @@ class RiskBanner extends StatelessWidget {
                     color: risk.bannerForeground.withValues(alpha: 0.92),
                   ),
                 ),
+                if (beach.riskDrivers.isNotEmpty) ...[
+                  const SizedBox(height: Insets.md),
+                  _RiskDrivers(
+                    drivers: beach.riskDrivers,
+                    foreground: risk.bannerForeground,
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+
+/// Names the measurements that pushed the rating up.
+///
+/// A colour and a sentence say *what* the rating is; these say *why*, which is
+/// the difference between being told a verdict and being able to check it.
+class _RiskDrivers extends StatelessWidget {
+  const _RiskDrivers({required this.drivers, required this.foreground});
+
+  final List<String> drivers;
+  final Color foreground;
+
+  /// The service names these in snake_case; these are the human labels.
+  static const _labels = <String, String>{
+    'wave_height': 'Wave height',
+    'wind_speed': 'Wind speed',
+    'swell': 'Swell',
+    'uv_index': 'UV index',
+    'water_quality': 'Water quality',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: Insets.sm,
+      runSpacing: Insets.xs + 2,
+      children: [
+        for (final driver in drivers)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Insets.sm + 2,
+              vertical: 3,
+            ),
+            decoration: BoxDecoration(
+              color: foreground.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(Radii.chip),
+              border: Border.all(color: foreground.withValues(alpha: 0.28)),
+            ),
+            child: Text(
+              // An unrecognised key is still worth showing, tidied up, rather
+              // than dropped — the service may add measurements we predate.
+              _labels[driver] ?? driver.replaceAll('_', ' '),
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: foreground.withValues(alpha: 0.95),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -8,6 +8,7 @@ import 'risk_level.dart';
 class Beach {
   const Beach({
     required this.id,
+    this.locationId,
     required this.name,
     required this.region,
     required this.latitude,
@@ -15,9 +16,15 @@ class Beach {
     required this.riskLevel,
     required this.conditions,
     this.riskSummary = '',
+    this.riskDrivers = const [],
+    this.riskEngine,
   });
 
   final int id;
+
+  /// The key the weather endpoint uses (`juhu`, `marina`, ...). Null on older
+  /// builds of the service, which did not send it.
+  final String? locationId;
 
   /// Display name. The backend ships this as "Juhu Beach, Mumbai"; the designs
   /// split it into a title and a region subtitle, which [fromJson] handles.
@@ -34,6 +41,13 @@ class Beach {
   /// Sentence shown inside the risk banner on Home.
   final String riskSummary;
 
+  /// Which measurements pushed the rating up, e.g. `wave_height`. Lets the
+  /// banner explain the rating instead of only announcing a colour.
+  final List<String> riskDrivers;
+
+  /// Which engine decided: `ai`, `rules`, or `unavailable`.
+  final String? riskEngine;
+
   factory Beach.fromJson(Map<String, dynamic> json) {
     final rawName = json['name'] as String? ?? 'Unknown Beach';
 
@@ -48,6 +62,7 @@ class Beach {
 
     return Beach(
       id: (json['id'] as num?)?.toInt() ?? -1,
+      locationId: json['location_id'] as String?,
       name: title,
       region: json['region'] as String? ?? derivedRegion,
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
@@ -63,9 +78,12 @@ class Beach {
     RiskLevel? riskLevel,
     Conditions? conditions,
     String? riskSummary,
+    List<String>? riskDrivers,
+    String? riskEngine,
   }) =>
       Beach(
         id: id,
+        locationId: locationId,
         name: name,
         region: region ?? this.region,
         latitude: latitude,
@@ -73,5 +91,7 @@ class Beach {
         riskLevel: riskLevel ?? this.riskLevel,
         conditions: conditions ?? this.conditions,
         riskSummary: riskSummary ?? this.riskSummary,
+        riskDrivers: riskDrivers ?? this.riskDrivers,
+        riskEngine: riskEngine ?? this.riskEngine,
       );
 }

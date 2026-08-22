@@ -4,7 +4,9 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from core.config import LOCATION_MAP, LocationCoords, LocationEnum, settings
+from schemas.risk import SeverityMode
 from schemas.weather import BeachWeatherResponse, SeverityModeEnum, WeatherAlert
+from services.risk_engine import evaluate_risk
 
 logger = logging.getLogger("weather_service")
 
@@ -56,6 +58,19 @@ def calculate_risk_profile(wave_height: float, wind_speed_kmh: float, uv_index: 
             "Low Risk - Safe Conditions",
             "Calm water conditions and favorable weather. Safe for recreational beach activities.",
         )
+
+
+def _to_response_severity(mode: SeverityMode) -> SeverityModeEnum:
+    """Collapses the engine five bands onto the response three.
+
+    Anything above Normal is a caution and only the engine top band is
+    Severe, so a rating is never softened on the way out.
+    """
+    if mode == SeverityMode.NORMAL:
+        return SeverityModeEnum.NORMAL
+    if mode == SeverityMode.SEVERE:
+        return SeverityModeEnum.SEVERE
+    return SeverityModeEnum.INTERMEDIATE
 
 
 async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
@@ -123,26 +138,103 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
 
     # 4. Aggregation and Risk Evaluation
     wave_height = float(marine_data.get("wave_height_m", 1.2))
-    wind_speed = float(weather_data.get("wind_speed_kmh", 15.0))
-    wind_dir = str(weather_data.get("wind_direction", "SW"))
-    raw_uv = weather_data.get("uv_index")
-    if raw_uv is None:
-        # The chosen provider does not measure UV. Ask one that does rather
-        # than substituting a number nobody observed.
-        try:
-            raw_uv = (await _fetch_openmeteo(coords)).get("uv_index")
-        except Exception as e:
-            logger.warning(f"UV backfill from Open-Meteo failed: {e}")
-    uv_index = float(raw_uv) if raw_uv is not None else 0.0
+    # Wind and UV both come from Open-Meteo, whichever provider supplied the
+    # air temperature.
+    #
+    # UV, because Tomorrow.io reports a clear-sky index: at Havelock under 100%
+    # cloud it returned 5.0, matching Open-Meteo's clear-sky figure of 5.05,
+    # while the UV actually reaching the ground was 2.45 — the difference
+    # between the Moderate and Low categories.
+    #
+    # Wind, because the providers disagree materially (3.2 against 10.6 km/h at
+    # Marina) and wind, waves, swell and tide are all inputs to one risk
+    # rating. Taking them from a single model makes the rating internally
+    # consistent rather than mixing two forecasts that describe different
+    # weather.
+    reference = None
+    try:
+        reference = await _fetch_openmeteo(coords)
+    except Exception as e:
+        logger.warning(f"Open-Meteo reference fetch failed: {e}")
+
+    def _prefer(field: str, default: Any) -> Any:
+        if reference is not None and reference.get(field) is not None:
+            return reference[field]
+        value = weather_data.get(field)
+        return value if value is not None else default
+
+    uv_index = float(_prefer("uv_index", 0.0))
+    wind_speed = float(_prefer("wind_speed_kmh", 15.0))
+    wind_dir = str(_prefer("wind_direction", "SW"))
     uv_cat = get_uv_category(uv_index)
     temp_c = float(weather_data.get("temperature_c", 29.0))
     sea_temp = marine_data.get("sea_temperature_c")
 
-    severity, risk_title, risk_desc = calculate_risk_profile(wave_height, wind_speed, uv_index)
+    # A source falling all the way through to its internal cache means we have
+    # no observation at all — those values are placeholders, not measurements.
+    # Grading them produced "Low Risk - Safe Conditions" with every provider
+    # down, which is the one thing a safety app must never say. Report the gap
+    # instead, and fail cautious rather than safe.
+    degraded = weather_source.startswith("Internal") or marine_source.startswith("Internal")
+    if degraded:
+        no_weather = weather_source.startswith("Internal")
+        no_marine = marine_source.startswith("Internal")
+        if no_weather and no_marine:
+            what = "Live readings"
+        elif no_weather:
+            what = "Live wind and UV readings"
+        else:
+            what = "Live wave and tide readings"
+
+        severity = SeverityModeEnum.INTERMEDIATE
+        triggered = []
+        engine = "unavailable"
+        risk_title = "Conditions Unavailable"
+        risk_desc = (
+            f"{what} could not be retrieved, so conditions cannot be assessed. "
+            "Treat the water as unknown and check with lifeguards on site "
+            "before entering."
+        )
+    else:
+        # The risk engine tries a model first and falls back to the same
+        # thresholds when there is no key, the call is slow, or the answer
+        # fails validation against those thresholds. Either way it returns
+        # an explanation of what drove the rating.
+        assessment = await evaluate_risk(
+            wave_height=wave_height,
+            wind_speed=wind_speed,
+            # Real swell, which is a different measurement from wave height.
+            # Passing wave height here double-counted one reading against two
+            # rules and inflated the rating. Unknown swell contributes zero
+            # rather than inflating.
+            swell=float(marine_data.get("swell_height_m") or 0.0),
+            uv_index=uv_index,
+            # No provider supplies live water quality. The roster carries a
+            # value, but it is a static fixture, and letting a fixture drive
+            # a live rating is the same defect as grading placeholder
+            # weather. "Unknown" matches no hazard rule, so it contributes
+            # nothing rather than contributing something invented.
+            water_quality="Unknown",
+            location_name=coords.name,
+        )
+        severity = _to_response_severity(assessment.severity_mode)
+        risk_title = assessment.risk_title
+        risk_desc = assessment.reasoning_summary
+        triggered = list(assessment.triggered_parameters)
+        engine = assessment.source
 
     # 5. Active Alerts Construction
     alerts: List[WeatherAlert] = []
-    if severity == SeverityModeEnum.SEVERE:
+    if degraded:
+        alerts.append(
+            WeatherAlert(
+                alert_type="Data Unavailable",
+                title="Live conditions could not be retrieved",
+                issued_time=now_iso,
+                location_scope=coords.name,
+            )
+        )
+    if not degraded and severity == SeverityModeEnum.SEVERE:
         alerts.append(
             WeatherAlert(
                 alert_type="Hazardous Swell & Gale Alert",
@@ -151,7 +243,7 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
                 location_scope=coords.name,
             )
         )
-    if uv_index >= 8.0:
+    if not degraded and uv_index >= 8.0:
         alerts.append(
             WeatherAlert(
                 alert_type="UV Radiation Warning",
@@ -167,10 +259,19 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
         latitude=coords.lat,
         longitude=coords.lon,
         timestamp=now_iso,
-        data_source=f"{weather_source} + {marine_source}",
+        # UV is sourced separately from the rest of the atmospheric data.
+        # Named precisely: wind and UV come from Open-Meteo even when the air
+        # temperature came from a commercial provider.
+        data_source=(
+            f"{weather_source} (air) + Open-Meteo (wind, UV) + {marine_source}"
+            if reference is not None
+            else f"{weather_source} + {marine_source}"
+        ),
         severity_mode=severity,
         risk_title=risk_title,
         risk_description=risk_desc,
+        triggered_parameters=triggered,
+        risk_engine=engine,
         temperature_c=round(temp_c, 1),
         sea_temperature_c=round(float(sea_temp), 1) if sea_temp is not None else None,
         wave_height=round(wave_height, 2),
@@ -321,9 +422,30 @@ def _next_tide_from_sea_level(
             continue
         if (1 if delta > 0 else -1) != trend:
             # The turn is at i: the last point before the direction reversed.
-            stamp = series[i][0]
+            # Hourly samples rarely land on the turn itself, so fit a parabola
+            # through the three points around it and take its vertex. Juhu's
+            # low sat flat across 14:00 and 15:00; reporting the sample gave
+            # 15:00 where the actual turn is 14:30.
+            turn_at = datetime.fromisoformat(series[i][0])
+            y1, y2, y3 = series[i - 1][1], series[i][1], series[i + 1][1]
+            denominator = y1 - 2 * y2 + y3
+            if abs(denominator) > 1e-9:
+                offset_hours = 0.5 * (y1 - y3) / denominator
+                # A vertex more than one sample away means the fit is not
+                # describing this turn; trust the sample instead.
+                if -1.0 <= offset_hours <= 1.0:
+                    turn_at += timedelta(hours=offset_hours)
+
+            # Round to the nearest five minutes: the source is hourly, so
+            # minute-level precision would overstate what is known.
+            minutes = round(turn_at.minute / 5) * 5
+            if minutes == 60:
+                turn_at += timedelta(hours=1)
+                minutes = 0
+            turn_at = turn_at.replace(minute=minutes, second=0, microsecond=0)
+
             return {
-                "next_tide_time": stamp[11:16],
+                "next_tide_time": turn_at.strftime("%H:%M"),
                 "next_tide_type": "High" if trend > 0 else "Low",
             }
     return {}
@@ -342,7 +464,7 @@ async def _fetch_openmeteo_marine(coords: LocationCoords) -> Dict[str, Any]:
             params={
                 "latitude": coords.lat,
                 "longitude": coords.lon,
-                "current": "wave_height,sea_surface_temperature",
+                "current": "wave_height,swell_wave_height,sea_surface_temperature",
                 "hourly": "sea_level_height_msl",
                 "timezone": "Asia/Kolkata",
                 "forecast_days": 2,
@@ -355,6 +477,7 @@ async def _fetch_openmeteo_marine(coords: LocationCoords) -> Dict[str, Any]:
 
         result: Dict[str, Any] = {
             "wave_height_m": current.get("wave_height", 1.1),
+            "swell_height_m": current.get("swell_wave_height"),
             "sea_temperature_c": current.get("sea_surface_temperature"),
         }
         # The series is in Asia/Kolkata, so compare against local wall time.

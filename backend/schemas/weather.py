@@ -35,6 +35,15 @@ class BeachWeatherResponse(BaseModel):
     risk_title: str
     risk_description: str
 
+    # Which metrics pushed the rating up, so the app can explain itself
+    # rather than only announcing a colour.
+    triggered_parameters: List[str] = Field(default_factory=list)
+
+    # Which engine decided: a validated model answer, the deterministic
+    # thresholds, or nothing because there was no data to assess.
+    risk_engine: Literal["ai", "rules", "unavailable"] = "rules"
+
+
     # Core Weather Grid
     temperature_c: float = Field(..., description="Air temperature in Celsius")
     sea_temperature_c: Optional[float] = Field(
