@@ -206,3 +206,44 @@ class TestEvaluateRisk:
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         r = asyncio.run(evaluate_risk(**CALM, location_name="Juhu"))
         assert r.source == "rules"
+
+
+class TestKeyResolution:
+    """The key has to be readable from .env, not just the shell.
+
+    Putting GROQ_API_KEY in .env used to do nothing: ProviderAPISettings had no
+    field to bind it to and extra="ignore" discarded it, so the engine fell
+    back to rules — which looks exactly like having no key at all.
+    """
+
+    def test_reads_the_key_from_settings(self, monkeypatch):
+        from core.config import ProviderAPISettings
+        providers = ProviderAPISettings(GROQ_API_KEY="gsk_from_env_file")
+        assert providers.get_llm_key() == "gsk_from_env_file"
+
+    def test_falls_back_to_the_process_environment(self, monkeypatch):
+        from core.config import ProviderAPISettings
+        monkeypatch.setenv("GROQ_API_KEY", "gsk_from_shell")
+        providers = ProviderAPISettings(_env_file=None)
+        assert providers.get_llm_key() == "gsk_from_shell"
+
+    def test_accepts_an_openai_key_too(self):
+        from core.config import ProviderAPISettings
+        providers = ProviderAPISettings(OPENAI_API_KEY="sk_openai")
+        assert providers.get_llm_key() == "sk_openai"
+
+    def test_reports_no_key_when_none_is_set(self, monkeypatch):
+        from core.config import ProviderAPISettings
+        monkeypatch.delenv("GROQ_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        providers = ProviderAPISettings(_env_file=None)
+        assert providers.get_llm_key() is None
+
+    def test_model_and_endpoint_are_overridable(self):
+        from core.config import ProviderAPISettings
+        providers = ProviderAPISettings(
+            GROQ_MODEL="llama-3.1-8b-instant",
+            GROQ_API_BASE_URL="https://example.test/v1/chat",
+        )
+        assert providers.GROQ_MODEL == "llama-3.1-8b-instant"
+        assert providers.GROQ_API_BASE_URL == "https://example.test/v1/chat"

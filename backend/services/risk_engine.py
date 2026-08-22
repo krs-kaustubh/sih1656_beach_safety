@@ -265,9 +265,7 @@ async def evaluate_risk(
     Enforces an 800ms timeout and falls back to a deterministic rules engine if unavailable or timed out.
     """
     # Resolve API Key
-    resolved_api_key = api_key or getattr(settings, "GROQ_API_KEY", None) or getattr(settings.providers, "GROQ_API_KEY", None)
-    if not resolved_api_key and hasattr(settings, "OPENAI_API_KEY"):
-        resolved_api_key = getattr(settings, "OPENAI_API_KEY", None)
+    resolved_api_key = api_key or settings.providers.get_llm_key()
 
     # Check environment variable directly if not found in settings
     import os
@@ -285,8 +283,14 @@ async def evaluate_risk(
             location_name=location_name,
         )
 
-    endpoint_url = os.getenv("GROQ_API_BASE_URL", "https://api.groq.com/openai/v1/chat/completions")
-    model_name = os.getenv("GROQ_MODEL", DEFAULT_MODEL)
+    endpoint_url = (
+        settings.providers.GROQ_API_BASE_URL
+        or os.getenv("GROQ_API_BASE_URL")
+        or "https://api.groq.com/openai/v1/chat/completions"
+    )
+    model_name = (
+        settings.providers.GROQ_MODEL or os.getenv("GROQ_MODEL") or DEFAULT_MODEL
+    )
 
     user_payload = {
         "location": location_name or "Coastal Beach",

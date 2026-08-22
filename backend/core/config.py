@@ -51,6 +51,15 @@ class ProviderAPISettings(BaseSettings):
     OPENWEATHER_API_KEY: Optional[str] = None
     OPENWEATHER_URL: str = "https://api.openweathermap.org/data/2.5/weather"
 
+    # Risk-assessment model. Declared here so the key can live in .env like
+    # every other credential — without a field to bind to, pydantic-settings
+    # discards it (extra="ignore") and the engine silently falls back to
+    # rules, which looks identical to having no key at all.
+    GROQ_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
+    GROQ_MODEL: Optional[str] = None
+    GROQ_API_BASE_URL: Optional[str] = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -66,6 +75,17 @@ class ProviderAPISettings(BaseSettings):
         if self.OPENWEATHER_API_KEY:
             return self.OPENWEATHER_API_KEY
         return self.OPENWEATHER_KEY.get_secret_value()
+
+    def get_llm_key(self) -> Optional[str]:
+        """Key for the risk model, from .env or the process environment."""
+        import os
+
+        return (
+            self.GROQ_API_KEY
+            or self.OPENAI_API_KEY
+            or os.getenv("GROQ_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+        )
 
 
 class Settings(BaseSettings):
