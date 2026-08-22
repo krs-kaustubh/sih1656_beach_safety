@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 13 (API 33) and above withhold notifications until the user
+         grants this at runtime. Requested when an alert channel is first
+         used, not at launch, so the prompt has visible context. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Lehar"
         android:name="${applicationName}"

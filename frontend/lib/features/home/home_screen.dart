@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/risk_theme.dart';
 import '../../models/beach.dart';
 import '../../models/safety_alert.dart';
+import '../../alerts/escalation_providers.dart';
 import '../../state/providers.dart';
 import '../../widgets/risk_backdrop.dart';
 import '../alerts/alert_detail_screen.dart';
@@ -56,6 +57,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keeps the escalation watcher alive while Home is on screen, so a beach
+    // rising to High Risk reaches the user through their chosen channel.
+    // Home is the right host: it is the tab that holds the selected beach.
+    ref.watch(escalationWatcherProvider);
+
     final beachAsync = ref.watch(selectedBeachProvider);
 
     return switch (beachAsync) {

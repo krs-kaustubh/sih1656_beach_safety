@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../settings/app_settings.dart';
 import '../../settings/settings_providers.dart';
+import '../../alerts/escalation_providers.dart';
 import '../../state/providers.dart';
 import 'emergency_contacts.dart';
 
@@ -98,6 +99,27 @@ class SettingsScreen extends ConsumerWidget {
                     groupValue: settings.alertFilter,
                     onChanged: controller.setAlertFilter,
                   ),
+              ],
+            ),
+
+            _Section(
+              title: 'Alert delivery',
+              footnote: 'Sent when the beach you are viewing rises to High '
+                  'Risk. Alerts are sent while the app is open; nothing is '
+                  'sent in the background.',
+              children: [
+                for (final channel in AlertChannel.values)
+                  _RadioRow<AlertChannel>(
+                    title: channel.label,
+                    subtitle: channel.description,
+                    value: channel,
+                    groupValue: settings.alertChannel,
+                    onChanged: controller.setAlertChannel,
+                  ),
+                if (settings.alertChannel.needsPhoneNumber)
+                  const _WhatsappNumberField(),
+                if (settings.alertChannel != AlertChannel.off)
+                  const _TestAlertRow(),
               ],
             ),
 
@@ -467,6 +489,171 @@ class _ContactRow extends StatelessWidget {
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFE5484D),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+// Collects the WhatsApp number, including country code.
+//
+// Stateful because the field needs its own controller: rebuilding a
+// TextField from settings on every keystroke would fight the cursor.
+class _WhatsappNumberField extends ConsumerStatefulWidget {
+  const _WhatsappNumberField();
+
+  @override
+  ConsumerState<_WhatsappNumberField> createState() =>
+      _WhatsappNumberFieldState();
+}
+
+class _WhatsappNumberFieldState extends ConsumerState<_WhatsappNumberField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: ref.read(settingsProvider).whatsappNumber ?? '',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = ref.watch(settingsProvider).whatsappNumber;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Insets.md,
+        0,
+        Insets.md,
+        Insets.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.phone,
+            style: const TextStyle(
+              fontSize: 15,
+              color: SettingsScreen._text,
+            ),
+            decoration: InputDecoration(
+              labelText: 'WhatsApp number',
+              // Spelling out the country code prevents the commonest setup
+              // failure: a local number WAHA cannot route.
+              hintText: '919876543210',
+              helperText: 'Include the country code, digits only.',
+              labelStyle: const TextStyle(color: SettingsScreen._muted),
+              hintStyle: TextStyle(
+                color: SettingsScreen._muted.withValues(alpha: 0.5),
+              ),
+              helperStyle: const TextStyle(
+                fontSize: 11.5,
+                color: SettingsScreen._muted,
+              ),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Radii.chip),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (value) =>
+                ref.read(settingsProvider.notifier).setWhatsappNumber(value),
+          ),
+          if (saved == null || saved.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: Insets.sm),
+              child: Text(
+                'No number saved, so no WhatsApp alerts will be sent.',
+                style: TextStyle(fontSize: 12, color: Color(0xFFE8B44A)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Sends one alert through the chosen channel so the user can see it arrive.
+class _TestAlertRow extends ConsumerStatefulWidget {
+  const _TestAlertRow();
+
+  @override
+  ConsumerState<_TestAlertRow> createState() => _TestAlertRowState();
+}
+
+class _TestAlertRowState extends ConsumerState<_TestAlertRow> {
+  bool _sending = false;
+
+  Future<void> _send() async {
+    setState(() => _sending = true);
+    final delivered = await sendTestAlert(
+      dispatcher: ref.read(alertDispatcherProvider),
+      settings: ref.read(settingsProvider),
+      beach: ref.read(selectedBeachProvider).value,
+    );
+    if (!mounted) return;
+    setState(() => _sending = false);
+
+    final channel = ref.read(settingsProvider).alertChannel;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          delivered
+              ? 'Test alert sent.'
+              : switch (channel) {
+                  AlertChannel.whatsapp =>
+                    'Could not send. Check the number and that the service '
+                        'is reachable.',
+                  AlertChannel.notification =>
+                    'Could not send. Notifications are blocked for Lehar in '
+                        'Android settings.',
+                  AlertChannel.off => 'Alerts are switched off.',
+                },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _sending ? null : _send,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Insets.md,
+          vertical: Insets.md,
+        ),
+        child: Row(
+          children: [
+            if (_sending)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: SettingsScreen._accent,
+                ),
+              )
+            else
+              const Icon(
+                Icons.send_rounded,
+                size: 20,
+                color: SettingsScreen._accent,
+              ),
+            const SizedBox(width: Insets.md),
+            Text(
+              _sending ? 'Sending...' : 'Send a test alert',
+              style: const TextStyle(
+                fontSize: 15,
+                color: SettingsScreen._accent,
               ),
             ),
           ],

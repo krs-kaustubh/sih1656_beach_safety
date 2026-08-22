@@ -87,6 +87,34 @@ enum AlertSeverityFilter {
       };
 }
 
+// How the app should reach the user when a beach's rating escalates.
+//
+// Escalation alerts are deliberately separate from [AlertSeverityFilter]:
+// that one controls what the tabs *display*, this one controls what the app
+// *sends*. A user who hides low-risk advisories on screen still wants to be
+// told when their beach turns dangerous.
+enum AlertChannel {
+  off(
+    'Off',
+    'No alerts are sent when a rating escalates',
+  ),
+  notification(
+    'Device notification',
+    'A notification on this phone',
+  ),
+  whatsapp(
+    'WhatsApp',
+    'A message to the number below',
+  );
+
+  const AlertChannel(this.label, this.description);
+  final String label;
+  final String description;
+
+  // WhatsApp is the only channel that needs anything else from the user.
+  bool get needsPhoneNumber => this == AlertChannel.whatsapp;
+}
+
 // Everything the user can configure. Immutable so changes produce new values.
 @immutable
 class AppSettings {
@@ -96,6 +124,8 @@ class AppSettings {
     this.temperatureUnit = TemperatureUnit.celsius,
     this.timeFormat = TimeFormat.twelveHour,
     this.alertFilter = AlertSeverityFilter.all,
+    this.alertChannel = AlertChannel.off,
+    this.whatsappNumber,
     this.defaultBeachId,
   });
 
@@ -105,8 +135,26 @@ class AppSettings {
   final TimeFormat timeFormat;
   final AlertSeverityFilter alertFilter;
 
+  // Where escalation alerts are sent. Off by default: an app that starts
+  // messaging a phone number the user never entered is worse than one that
+  // waits to be asked.
+  final AlertChannel alertChannel;
+
+  // Digits only, including country code, e.g. 919876543210. Null until set.
+  final String? whatsappNumber;
+
   // Beach shown on launch. Null means whichever the backend lists first.
   final int? defaultBeachId;
+
+  // Whether escalation alerts can actually be delivered. Picking WhatsApp
+  // without a number leaves the channel selected but inert, which is why the
+  // settings screen warns about exactly this state.
+  bool get canDeliverAlerts => switch (alertChannel) {
+        AlertChannel.off => false,
+        AlertChannel.notification => true,
+        AlertChannel.whatsapp =>
+          whatsappNumber != null && whatsappNumber!.isNotEmpty,
+      };
 
 
   static const defaults = AppSettings();
@@ -117,6 +165,9 @@ class AppSettings {
     TemperatureUnit? temperatureUnit,
     TimeFormat? timeFormat,
     AlertSeverityFilter? alertFilter,
+    AlertChannel? alertChannel,
+    String? whatsappNumber,
+    bool clearWhatsappNumber = false,
     int? defaultBeachId,
     bool clearDefaultBeach = false,
   }) =>
@@ -126,6 +177,10 @@ class AppSettings {
         temperatureUnit: temperatureUnit ?? this.temperatureUnit,
         timeFormat: timeFormat ?? this.timeFormat,
         alertFilter: alertFilter ?? this.alertFilter,
+        alertChannel: alertChannel ?? this.alertChannel,
+        whatsappNumber: clearWhatsappNumber
+            ? null
+            : (whatsappNumber ?? this.whatsappNumber),
         defaultBeachId:
             clearDefaultBeach ? null : (defaultBeachId ?? this.defaultBeachId),
       );
@@ -138,9 +193,12 @@ class AppSettings {
       other.temperatureUnit == temperatureUnit &&
       other.timeFormat == timeFormat &&
       other.alertFilter == alertFilter &&
+      other.alertChannel == alertChannel &&
+      other.whatsappNumber == whatsappNumber &&
       other.defaultBeachId == defaultBeachId;
 
   @override
   int get hashCode => Object.hash(waveHeightUnit, windSpeedUnit,
-      temperatureUnit, timeFormat, alertFilter, defaultBeachId);
+      temperatureUnit, timeFormat, alertFilter, alertChannel, whatsappNumber,
+      defaultBeachId);
 }
