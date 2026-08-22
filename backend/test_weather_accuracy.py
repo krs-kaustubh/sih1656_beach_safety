@@ -18,17 +18,39 @@ def _series(start_hour, levels):
 class TestNextTide:
     def test_finds_a_rising_tide_turning_high(self):
         times, levels = _series(0, [0.1, 0.4, 0.7, 0.9, 0.8, 0.5])
-        assert _next_tide_from_sea_level(times, levels) == {
-            "next_tide_time": "03:00",
-            "next_tide_type": "High",
-        }
+        result = _next_tide_from_sea_level(times, levels)
+        assert result["next_tide_type"] == "High"
+        # Interpolated between the 03:00 and 04:00 samples.
+        assert "03:00" <= result["next_tide_time"] <= "04:00"
 
     def test_finds_a_falling_tide_turning_low(self):
         times, levels = _series(0, [0.9, 0.6, 0.2, -0.1, 0.2, 0.6])
-        assert _next_tide_from_sea_level(times, levels) == {
-            "next_tide_time": "03:00",
-            "next_tide_type": "Low",
-        }
+        result = _next_tide_from_sea_level(times, levels)
+        assert result["next_tide_type"] == "Low"
+        assert "03:00" <= result["next_tide_time"] <= "04:00"
+
+    def test_interpolates_between_hourly_samples(self):
+        # The source is hourly, so a turn almost never lands on a sample. A
+        # symmetric peak sits exactly between the two equal shoulders.
+        times, levels = _series(0, [0.1, 0.5, 0.9, 0.9, 0.5, 0.1])
+        assert _next_tide_from_sea_level(times, levels)["next_tide_time"] == "02:30"
+
+    def test_resolves_a_flat_low_to_its_middle(self):
+        # Juhu's low sat flat across 14:00 and 15:00; reporting the sample gave
+        # 15:00 where the actual turn is 14:30.
+        times, levels = _series(12, [0.49, 0.41, 0.38, 0.38, 0.39, 0.41])
+        result = _next_tide_from_sea_level(times, levels)
+        assert result["next_tide_type"] == "Low"
+        assert result["next_tide_time"] == "14:30"
+
+    def test_never_reports_a_turn_more_than_an_hour_from_its_sample(self):
+        # A near-collinear run makes the parabola vertex fly off; the sample
+        # has to win rather than producing a nonsense time.
+        times, levels = _series(0, [0.50, 0.50001, 0.50002, 0.49, 0.30, 0.10])
+        result = _next_tide_from_sea_level(times, levels)
+        if result:
+            hour = int(result["next_tide_time"][:2])
+            assert 0 <= hour <= 5
 
     def test_skips_turns_that_already_happened(self):
         # The series always starts at midnight. Without trimming to now, the
@@ -56,6 +78,12 @@ class TestNextTide:
         # Hourly sampling often lands two equal readings either side of a turn.
         times, levels = _series(0, [0.1, 0.5, 0.88, 0.88, 0.6, 0.2])
         assert _next_tide_from_sea_level(times, levels)["next_tide_type"] == "High"
+
+    def test_reports_times_on_a_five_minute_grid(self):
+        # The source is hourly; minute-level precision would overstate it.
+        times, levels = _series(0, [0.1, 0.4, 0.73, 0.91, 0.77, 0.5])
+        stamp = _next_tide_from_sea_level(times, levels)["next_tide_time"]
+        assert int(stamp[3:]) % 5 == 0
 
 
 class TestUvCategory:

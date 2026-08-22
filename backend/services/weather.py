@@ -140,14 +140,21 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
     wave_height = float(marine_data.get("wave_height_m", 1.2))
     wind_speed = float(weather_data.get("wind_speed_kmh", 15.0))
     wind_dir = str(weather_data.get("wind_direction", "SW"))
-    raw_uv = weather_data.get("uv_index")
+    # UV always comes from Open-Meteo, whichever provider supplied the rest.
+    #
+    # Tomorrow.io reports a clear-sky UV index: at Havelock under 100% cloud it
+    # returned 5.0, matching Open-Meteo's clear-sky figure of 5.05, while the
+    # actual cloud-attenuated exposure was 2.45 — enough to move the category
+    # from Low to Moderate. What a beachgoer needs is the UV reaching the
+    # ground, so the cloud-adjusted value wins and the provider's own number is
+    # only a fallback.
+    raw_uv = None
+    try:
+        raw_uv = (await _fetch_openmeteo(coords)).get("uv_index")
+    except Exception as e:
+        logger.warning(f"Cloud-adjusted UV from Open-Meteo failed: {e}")
     if raw_uv is None:
-        # The chosen provider does not measure UV. Ask one that does rather
-        # than substituting a number nobody observed.
-        try:
-            raw_uv = (await _fetch_openmeteo(coords)).get("uv_index")
-        except Exception as e:
-            logger.warning(f"UV backfill from Open-Meteo failed: {e}")
+        raw_uv = weather_data.get("uv_index")
     uv_index = float(raw_uv) if raw_uv is not None else 0.0
     uv_cat = get_uv_category(uv_index)
     temp_c = float(weather_data.get("temperature_c", 29.0))
@@ -242,7 +249,8 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
         latitude=coords.lat,
         longitude=coords.lon,
         timestamp=now_iso,
-        data_source=f"{weather_source} + {marine_source}",
+        # UV is sourced separately from the rest of the atmospheric data.
+        data_source=f"{weather_source} + {marine_source} + Open-Meteo (UV)",
         severity_mode=severity,
         risk_title=risk_title,
         risk_description=risk_desc,
@@ -398,9 +406,30 @@ def _next_tide_from_sea_level(
             continue
         if (1 if delta > 0 else -1) != trend:
             # The turn is at i: the last point before the direction reversed.
-            stamp = series[i][0]
+            # Hourly samples rarely land on the turn itself, so fit a parabola
+            # through the three points around it and take its vertex. Juhu's
+            # low sat flat across 14:00 and 15:00; reporting the sample gave
+            # 15:00 where the actual turn is 14:30.
+            turn_at = datetime.fromisoformat(series[i][0])
+            y1, y2, y3 = series[i - 1][1], series[i][1], series[i + 1][1]
+            denominator = y1 - 2 * y2 + y3
+            if abs(denominator) > 1e-9:
+                offset_hours = 0.5 * (y1 - y3) / denominator
+                # A vertex more than one sample away means the fit is not
+                # describing this turn; trust the sample instead.
+                if -1.0 <= offset_hours <= 1.0:
+                    turn_at += timedelta(hours=offset_hours)
+
+            # Round to the nearest five minutes: the source is hourly, so
+            # minute-level precision would overstate what is known.
+            minutes = round(turn_at.minute / 5) * 5
+            if minutes == 60:
+                turn_at += timedelta(hours=1)
+                minutes = 0
+            turn_at = turn_at.replace(minute=minutes, second=0, microsecond=0)
+
             return {
-                "next_tide_time": stamp[11:16],
+                "next_tide_time": turn_at.strftime("%H:%M"),
                 "next_tide_type": "High" if trend > 0 else "Low",
             }
     return {}
