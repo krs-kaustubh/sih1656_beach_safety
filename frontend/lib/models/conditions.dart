@@ -62,6 +62,7 @@ class Conditions {
     this.uvIndex,
     this.nextTide,
     this.waterTempCelsius,
+    this.airTempCelsius,
     this.waterQuality,
     this.uvCategory,
   });
@@ -74,7 +75,12 @@ class Conditions {
   final String? windDirection;
   final double? uvIndex;
   final TideInfo? nextTide;
+  /// Sea surface temperature — what a swimmer feels.
   final double? waterTempCelsius;
+
+  /// Air temperature. Kept distinct: the two differ by several degrees and
+  /// only one of them answers "how cold is the water".
+  final double? airTempCelsius;
 
   /// Free-form on the backend today ("Excellent" / "Moderate" / "Poor"), so it
   /// is deliberately kept as a string rather than forced into an enum.
@@ -104,7 +110,9 @@ class Conditions {
       nextTide: json['next_tide'] == null
           ? null
           : TideInfo.fromJson(json['next_tide'] as Map<String, dynamic>),
-      waterTempCelsius: asDouble(json['water_temp_celsius']),
+      waterTempCelsius: asDouble(json['water_temp_celsius']) ??
+          asDouble(json['sea_temperature_c']),
+      airTempCelsius: asDouble(json['temperature_c']),
       waterQuality: json['water_quality'] as String?,
       uvCategory: json['uv_category'] as String?,
     );
@@ -117,6 +125,7 @@ class Conditions {
     double? uvIndex,
     TideInfo? nextTide,
     double? waterTempCelsius,
+    double? airTempCelsius,
     String? waterQuality,
     String? uvCategory,
   }) =>
@@ -128,6 +137,7 @@ class Conditions {
         uvIndex: uvIndex ?? this.uvIndex,
         nextTide: nextTide ?? this.nextTide,
         waterTempCelsius: waterTempCelsius ?? this.waterTempCelsius,
+        airTempCelsius: airTempCelsius ?? this.airTempCelsius,
         waterQuality: waterQuality ?? this.waterQuality,
         uvCategory: uvCategory ?? this.uvCategory,
       );

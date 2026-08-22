@@ -67,7 +67,13 @@ class BeachWeather {
         windDirection: json['wind_direction'] as String?,
         uvIndex: asDouble(json['uv_index']),
         uvCategory: json['uv_category'] as String?,
-        waterTempCelsius: asDouble(json['temperature_c']),
+        // Sea surface temperature, not air. `temperature_c` is the air
+        // reading from the atmospheric provider; showing it under "Water
+        // Temp" told swimmers the sea was several degrees colder than it is.
+        // When the marine provider has no reading, this stays null and the
+        // UI shows a dash rather than substituting the air temperature.
+        waterTempCelsius: asDouble(json['sea_temperature_c']),
+        airTempCelsius: asDouble(json['temperature_c']),
         nextTide: _parseTide(
           json['next_tide_time'] as String?,
           json['next_tide_type'] as String?,

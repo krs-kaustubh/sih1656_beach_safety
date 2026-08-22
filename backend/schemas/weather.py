@@ -36,14 +36,21 @@ class BeachWeatherResponse(BaseModel):
     risk_description: str
 
     # Core Weather Grid
-    temperature_c: float
+    temperature_c: float = Field(..., description="Air temperature in Celsius")
+    sea_temperature_c: Optional[float] = Field(
+        None, description="Sea surface temperature in Celsius, when available"
+    )
     wave_height: float = Field(..., description="Wave height in meters")
     wind_speed: float = Field(..., description="Wind speed in km/h")
     wind_direction: str = Field(..., description="Compass heading like 'SW', 'NNE'")
     uv_index: float
     uv_category: Literal["Low", "Moderate", "High", "Very High", "Extreme"]
-    next_tide_time: str = Field(..., description="Time of next tide, e.g., '14:30'")
-    next_tide_type: Literal["High", "Low"]
+    # Optional: derived from the hourly sea-level series, so an unreachable
+    # marine provider means no tide rather than an invented one.
+    next_tide_time: Optional[str] = Field(
+        None, description="Time of next tide turn, e.g. '14:30'"
+    )
+    next_tide_type: Optional[Literal["High", "Low"]] = None
 
     # Active Alerts Array
     alerts: List[WeatherAlert] = Field(default_factory=list)

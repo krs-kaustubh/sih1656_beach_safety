@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 import httpx
 
@@ -115,20 +115,28 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
             marine_source = "Open-Meteo Marine"
         except Exception as e:
             logger.error(f"Open-Meteo Marine failed: {e}. Using cached fallback marine data.")
-            marine_data = {
-                "wave_height_m": 1.2,
-                "next_tide_time": "15:45",
-                "next_tide_type": "High",
-            }
+            # No tide or sea temperature here: an unreachable provider means
+            # we do not know them, and a plausible-looking guess in a safety
+            # app is worse than an honest gap.
+            marine_data = {"wave_height_m": 1.2}
             marine_source = "Internal Marine Cache"
 
     # 4. Aggregation and Risk Evaluation
     wave_height = float(marine_data.get("wave_height_m", 1.2))
     wind_speed = float(weather_data.get("wind_speed_kmh", 15.0))
     wind_dir = str(weather_data.get("wind_direction", "SW"))
-    uv_index = float(weather_data.get("uv_index", 5.0))
+    raw_uv = weather_data.get("uv_index")
+    if raw_uv is None:
+        # The chosen provider does not measure UV. Ask one that does rather
+        # than substituting a number nobody observed.
+        try:
+            raw_uv = (await _fetch_openmeteo(coords)).get("uv_index")
+        except Exception as e:
+            logger.warning(f"UV backfill from Open-Meteo failed: {e}")
+    uv_index = float(raw_uv) if raw_uv is not None else 0.0
     uv_cat = get_uv_category(uv_index)
     temp_c = float(weather_data.get("temperature_c", 29.0))
+    sea_temp = marine_data.get("sea_temperature_c")
 
     severity, risk_title, risk_desc = calculate_risk_profile(wave_height, wind_speed, uv_index)
 
@@ -164,13 +172,14 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
         risk_title=risk_title,
         risk_description=risk_desc,
         temperature_c=round(temp_c, 1),
+        sea_temperature_c=round(float(sea_temp), 1) if sea_temp is not None else None,
         wave_height=round(wave_height, 2),
         wind_speed=round(wind_speed, 1),
         wind_direction=wind_dir,
         uv_index=round(uv_index, 1),
         uv_category=uv_cat,
-        next_tide_time=marine_data.get("next_tide_time", "15:30"),
-        next_tide_type=marine_data.get("next_tide_type", "High"),
+        next_tide_time=marine_data.get("next_tide_time"),
+        next_tide_type=marine_data.get("next_tide_type"),
         alerts=alerts,
     )
 
@@ -220,7 +229,10 @@ async def _fetch_openweather(coords: LocationCoords) -> Dict[str, Any]:
             "temperature_c": data["main"]["temp"],
             "wind_speed_kmh": round(data["wind"]["speed"] * 3.6, 1),
             "wind_direction": degrees_to_compass(wind_deg),
-            "uv_index": 5.0,  # OpenWeather 2.5 current weather endpoint fallback
+            # The 2.5 current-weather endpoint carries no UV index. Returning
+            # a constant here reported "Moderate" sun at 5am; None lets the
+            # caller fall back to a provider that actually measures it.
+            "uv_index": None,
         }
 
 
@@ -245,36 +257,116 @@ async def _fetch_openmeteo(coords: LocationCoords) -> Dict[str, Any]:
 
 
 async def _fetch_incois_erddap(coords: LocationCoords) -> Dict[str, Any]:
-    """Queries INCOIS ERDDAP datasets with timeout protection."""
-    async with httpx.AsyncClient(timeout=4.0) as client:
-        res = await client.get(
-            f"{settings.providers.INCOIS_ERDDAP_URL}/info/index.json"
-        )
-        res.raise_for_status()
-        return {
-            "wave_height_m": 1.35,
-            "next_tide_time": "16:20",
-            "next_tide_type": "High",
-        }
+    """INCOIS ERDDAP marine data.
+
+    Not implemented yet. This previously reached the ERDDAP index and then
+    returned fixed numbers, so a successful call advertised "INCOIS ERDDAP" as
+    the data source for values INCOIS never supplied. Raising instead lets the
+    Open-Meteo Marine fallback run and keeps data_source truthful.
+    """
+    raise NotImplementedError(
+        "INCOIS ERDDAP dataset query is not implemented; using marine fallback"
+    )
+
+
+def _next_tide_from_sea_level(
+    times: List[str],
+    levels: List[Any],
+    now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Finds the next tide turn in an hourly sea-level series.
+
+    A tide turn is a local extremum of sea level: the water rises to a high,
+    then falls to a low. Walking forward until the trend reverses gives the
+    next turn and tells us which kind it is.
+
+    The series starts at midnight, so it is trimmed to the present first —
+    otherwise the "next" tide is whichever turn happened earliest today, which
+    may be hours in the past. One hour of lead-in is kept so the current
+    direction of travel can still be established.
+
+    Resolution is hourly, so the time is accurate to roughly half an hour.
+    Returns an empty dict when the series is unusable, so the caller reports
+    no tide rather than inventing one.
+    """
+    series = [(t, l) for t, l in zip(times, levels) if l is not None]
+    if len(series) < 3:
+        return {}
+
+    if now is not None:
+        cutoff = now - timedelta(hours=1)
+        trimmed = [
+            (t, l) for t, l in series
+            if datetime.fromisoformat(t) >= cutoff
+        ]
+        # Keep the untrimmed series if trimming leaves too little to work with.
+        if len(trimmed) >= 3:
+            series = trimmed
+
+    # Establish the current direction, skipping any flat stretch at the start.
+    trend = 0
+    start = 0
+    for i in range(len(series) - 1):
+        delta = series[i + 1][1] - series[i][1]
+        if abs(delta) > 1e-4:
+            trend = 1 if delta > 0 else -1
+            start = i
+            break
+    if trend == 0:
+        return {}
+
+    for i in range(start + 1, len(series) - 1):
+        delta = series[i + 1][1] - series[i][1]
+        if abs(delta) <= 1e-4:
+            continue
+        if (1 if delta > 0 else -1) != trend:
+            # The turn is at i: the last point before the direction reversed.
+            stamp = series[i][0]
+            return {
+                "next_tide_time": stamp[11:16],
+                "next_tide_type": "High" if trend > 0 else "Low",
+            }
+    return {}
 
 
 async def _fetch_openmeteo_marine(coords: LocationCoords) -> Dict[str, Any]:
-    async with httpx.AsyncClient(timeout=5.0) as client:
+    """Marine conditions from Open-Meteo: waves, sea temperature and tides.
+
+    Tides are derived from the hourly sea-level series rather than hardcoded.
+    Sea surface temperature is fetched here because the atmospheric providers
+    only report air temperature, which is not what a swimmer needs to know.
+    """
+    async with httpx.AsyncClient(timeout=8.0) as client:
         res = await client.get(
             settings.providers.OPEN_METEO_MARINE_URL,
             params={
                 "latitude": coords.lat,
                 "longitude": coords.lon,
-                "current": "wave_height",
+                "current": "wave_height,sea_surface_temperature",
+                "hourly": "sea_level_height_msl",
+                "timezone": "Asia/Kolkata",
+                "forecast_days": 2,
             },
         )
         res.raise_for_status()
-        current = res.json().get("current", {})
-        return {
+        payload = res.json()
+        current = payload.get("current", {})
+        hourly = payload.get("hourly", {})
+
+        result: Dict[str, Any] = {
             "wave_height_m": current.get("wave_height", 1.1),
-            "next_tide_time": "14:15",
-            "next_tide_type": "Low",
+            "sea_temperature_c": current.get("sea_surface_temperature"),
         }
+        # The series is in Asia/Kolkata, so compare against local wall time.
+        local_now = datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
+        result.update(
+            _next_tide_from_sea_level(
+                hourly.get("time", []),
+                hourly.get("sea_level_height_msl", []),
+                now=local_now.replace(tzinfo=None),
+            )
+        )
+        return result
 
 
 def _generate_mock_payload(

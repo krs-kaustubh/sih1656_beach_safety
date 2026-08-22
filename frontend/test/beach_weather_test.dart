@@ -19,7 +19,7 @@ const _severePayload = '''
   "severity_mode": "Severe",
   "risk_title": "Severe Hazard - Storm Surge & Gale Warning",
   "risk_description": "Extreme wave heights, gale-force winds, and critical UV radiation.",
-  "temperature_c": 33.5, "wave_height": 4.85,
+  "temperature_c": 33.5, "sea_temperature_c": 30.4, "wave_height": 4.85,
   "wind_speed": 68.4, "wind_direction": "SW",
   "uv_index": 12.2, "uv_category": "Extreme",
   "next_tide_time": "17:40", "next_tide_type": "High",
@@ -70,7 +70,20 @@ void main() {
       expect(w.conditions.waveHeightMeters, 4.85);
       expect(w.conditions.windSpeedKph, 68.4);
       expect(w.conditions.windDirection, 'SW');
-      expect(w.conditions.waterTempCelsius, 33.5);
+    });
+
+    test('keeps sea and air temperature apart', () {
+      // temperature_c is the atmospheric provider's air reading. Showing it
+      // under "Water Temp" told swimmers the sea was several degrees colder
+      // than it is, so water temperature comes from the marine provider only.
+      expect(w.conditions.waterTempCelsius, 30.4);
+      expect(w.conditions.airTempCelsius, 33.5);
+    });
+
+    test('reports no water temperature rather than falling back to air', () {
+      final noSea = _parse(_severePayload.replaceFirst('"sea_temperature_c": 30.4,', ''));
+      expect(noSea.conditions.waterTempCelsius, isNull);
+      expect(noSea.conditions.airTempCelsius, 33.5);
     });
 
     test('prefers the service UV wording over the locally derived band', () {
