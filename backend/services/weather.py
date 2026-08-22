@@ -138,24 +138,34 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
 
     # 4. Aggregation and Risk Evaluation
     wave_height = float(marine_data.get("wave_height_m", 1.2))
-    wind_speed = float(weather_data.get("wind_speed_kmh", 15.0))
-    wind_dir = str(weather_data.get("wind_direction", "SW"))
-    # UV always comes from Open-Meteo, whichever provider supplied the rest.
+    # Wind and UV both come from Open-Meteo, whichever provider supplied the
+    # air temperature.
     #
-    # Tomorrow.io reports a clear-sky UV index: at Havelock under 100% cloud it
-    # returned 5.0, matching Open-Meteo's clear-sky figure of 5.05, while the
-    # actual cloud-attenuated exposure was 2.45 — enough to move the category
-    # from Low to Moderate. What a beachgoer needs is the UV reaching the
-    # ground, so the cloud-adjusted value wins and the provider's own number is
-    # only a fallback.
-    raw_uv = None
+    # UV, because Tomorrow.io reports a clear-sky index: at Havelock under 100%
+    # cloud it returned 5.0, matching Open-Meteo's clear-sky figure of 5.05,
+    # while the UV actually reaching the ground was 2.45 — the difference
+    # between the Moderate and Low categories.
+    #
+    # Wind, because the providers disagree materially (3.2 against 10.6 km/h at
+    # Marina) and wind, waves, swell and tide are all inputs to one risk
+    # rating. Taking them from a single model makes the rating internally
+    # consistent rather than mixing two forecasts that describe different
+    # weather.
+    reference = None
     try:
-        raw_uv = (await _fetch_openmeteo(coords)).get("uv_index")
+        reference = await _fetch_openmeteo(coords)
     except Exception as e:
-        logger.warning(f"Cloud-adjusted UV from Open-Meteo failed: {e}")
-    if raw_uv is None:
-        raw_uv = weather_data.get("uv_index")
-    uv_index = float(raw_uv) if raw_uv is not None else 0.0
+        logger.warning(f"Open-Meteo reference fetch failed: {e}")
+
+    def _prefer(field: str, default: Any) -> Any:
+        if reference is not None and reference.get(field) is not None:
+            return reference[field]
+        value = weather_data.get(field)
+        return value if value is not None else default
+
+    uv_index = float(_prefer("uv_index", 0.0))
+    wind_speed = float(_prefer("wind_speed_kmh", 15.0))
+    wind_dir = str(_prefer("wind_direction", "SW"))
     uv_cat = get_uv_category(uv_index)
     temp_c = float(weather_data.get("temperature_c", 29.0))
     sea_temp = marine_data.get("sea_temperature_c")
@@ -250,7 +260,13 @@ async def get_beach_weather(location: LocationEnum) -> BeachWeatherResponse:
         longitude=coords.lon,
         timestamp=now_iso,
         # UV is sourced separately from the rest of the atmospheric data.
-        data_source=f"{weather_source} + {marine_source} + Open-Meteo (UV)",
+        # Named precisely: wind and UV come from Open-Meteo even when the air
+        # temperature came from a commercial provider.
+        data_source=(
+            f"{weather_source} (air) + Open-Meteo (wind, UV) + {marine_source}"
+            if reference is not None
+            else f"{weather_source} + {marine_source}"
+        ),
         severity_mode=severity,
         risk_title=risk_title,
         risk_description=risk_desc,
