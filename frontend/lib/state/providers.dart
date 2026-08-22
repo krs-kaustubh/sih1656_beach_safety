@@ -86,6 +86,11 @@ final filteredBeachesProvider = Provider<AsyncValue<List<Beach>>>((ref) {
 
 // Pull-to-refresh: drops cached data so every dependent provider refetches.
 Future<void> refreshAll(WidgetRef ref) async {
+  // Clear the repository's cached readings first. Invalidating the provider
+  // alone only re-runs the fetch; the repository would answer it from the
+  // reading it already holds, so a rating that had changed since the last
+  // pull would not show until that cache aged out on its own.
+  ref.read(repositoryProvider).invalidateCache();
 
   ref.invalidate(beachesProvider);
   await ref.read(selectedBeachProvider.future);

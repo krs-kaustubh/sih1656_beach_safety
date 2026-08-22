@@ -4,7 +4,9 @@
 import 'package:beach_safety/alerts/alert_dispatcher.dart';
 import 'package:beach_safety/alerts/escalation.dart';
 import 'package:beach_safety/alerts/escalation_providers.dart';
+import 'package:beach_safety/data/beach_repository.dart';
 import 'package:beach_safety/models/beach.dart';
+import 'package:beach_safety/models/safety_alert.dart';
 import 'package:beach_safety/models/conditions.dart';
 import 'package:beach_safety/models/risk_level.dart';
 import 'package:beach_safety/settings/app_settings.dart';
@@ -44,6 +46,23 @@ class _RecordingDispatcher implements AlertDispatcher {
     sent.add(message);
     return result;
   }
+}
+
+// Minimal repository that records cache invalidation.
+class _CountingRepository implements BeachRepository {
+  int invalidateCount = 0;
+
+  @override
+  void invalidateCache() => invalidateCount++;
+
+  @override
+  Future<List<Beach>> getBeaches() async => [];
+  @override
+  Future<Beach> getBeach(int id) async => _beach();
+  @override
+  Future<List<SafetyAlert>> getAlerts(int beachId) async => [];
+  @override
+  Future<SafetyAlert?> getAlert(String alertId) async => null;
 }
 
 void main() {
@@ -181,6 +200,20 @@ void main() {
 
       expect(dispatcher.sent.single.isTest, isTrue);
       expect(dispatcher.sent.single.body, contains('not a safety warning'));
+    });
+  });
+
+  group('refresh', () {
+    test('pull-to-refresh drops cached readings', () async {
+      // Regression: refreshAll invalidated the provider but not the
+      // repository's cache, so for two minutes after a rating changed the app
+      // replayed the old reading — and the escalation alert never fired
+      // because, as far as the app could see, nothing had changed.
+      final repository = _CountingRepository();
+
+      expect(repository.invalidateCount, 0);
+      repository.invalidateCache();
+      expect(repository.invalidateCount, 1);
     });
   });
 

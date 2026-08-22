@@ -14,6 +14,10 @@ class MockBeachRepository implements BeachRepository {
 
 
   late final List<Beach> _beaches = MockData.beaches();
+
+  // Nothing is cached: the fixtures are the source.
+  @override
+  void invalidateCache() {}
   late final List<SafetyAlert> _alerts = MockData.alerts();
 
   Future<T> _delayed<T>(T value) async {

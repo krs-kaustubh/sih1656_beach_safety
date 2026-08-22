@@ -112,6 +112,9 @@ class ApiBeachRepository implements BeachRepository {
     return first.toLowerCase();
   }
 
+  @override
+  void invalidateCache() => _weather.clear();
+
   void dispose() => _client.dispose();
 }
 
