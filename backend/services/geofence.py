@@ -142,3 +142,26 @@ async def is_in_hazard_zone(
     except Exception as exc:
         logger.error(f"Error evaluating hazard zone geofence for beach_id '{beach_id}' at ({user_lat}, {user_lon}): {exc}", exc_info=True)
         return False
+
+NOTIFIABLE_SEVERITIES = {"INTERMEDIATE_MED", "INTERMEDIATE_HIGH", "SEVERE"}
+
+
+async def should_alert(
+    user_lat: float,
+    user_lon: float,
+    beach_id: str,
+    severity_mode: str,
+    provider: Optional[HazardZoneDataProvider] = None,
+) -> bool:
+    """
+    Decides whether a WhatsApp alert should fire for this user.
+
+    Both conditions must hold:
+      1. severity_mode is one of NOTIFIABLE_SEVERITIES
+      2. user's coordinates fall inside the beach's hazard zone polygon
+
+    Severity is checked first (cheap) before the geometry check (relatively more work).
+    """
+    if severity_mode not in NOTIFIABLE_SEVERITIES:
+        return False
+    return await is_in_hazard_zone(user_lat, user_lon, beach_id, provider)

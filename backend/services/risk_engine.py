@@ -88,6 +88,77 @@ def validate_ai_assessment(
 
     return None
 
+# Ordered least to most hazardous, so two assessments can be compared.
+SEVERITY_ORDER: List[SeverityMode] = [
+    SeverityMode.NORMAL,
+    SeverityMode.INTERMEDIATE_LOW,
+    SeverityMode.INTERMEDIATE_MED,
+    SeverityMode.INTERMEDIATE_HIGH,
+    SeverityMode.SEVERE,
+]
+
+KNOWN_PARAMETERS = {
+    "wave_height",
+    "wind_speed",
+    "swell",
+    "uv_index",
+    "water_quality",
+}
+
+
+def validate_ai_assessment(
+    ai: RiskAssessmentResponse,
+    rules: RiskAssessmentResponse,
+) -> Optional[str]:
+    """Checks an LLM assessment against the deterministic one.
+
+    Returns None if the assessment is usable, or a short reason to reject it.
+
+    The rule that matters is asymmetric: the model may be *more* cautious than
+    the thresholds, never less. A model is free to notice a combination the
+    thresholds miss and escalate, but it must not talk the risk down — an LLM
+    calling 4 m surf "Normal" is exactly the failure this guards, and the
+    deterministic answer is the floor.
+    """
+    try:
+        ai_rank = SEVERITY_ORDER.index(ai.severity_mode)
+        rules_rank = SEVERITY_ORDER.index(rules.severity_mode)
+    except ValueError:
+        return f"unknown severity {ai.severity_mode!r}"
+
+    if ai_rank < rules_rank:
+        return (
+            f"less cautious than the thresholds "
+            f"({ai.severity_mode.value} < {rules.severity_mode.value})"
+        )
+
+    summary = (ai.reasoning_summary or "").strip()
+    if not summary:
+        return "empty reasoning"
+    if len(summary) > 400:
+        return f"reasoning too long ({len(summary)} chars)"
+
+    title = (ai.risk_title or "").strip()
+    if not title:
+        return "empty risk title"
+    if len(title) > 80:
+        return f"risk title too long ({len(title)} chars)"
+
+    unknown = set(ai.triggered_parameters) - KNOWN_PARAMETERS
+    if unknown:
+        return f"invented parameters {sorted(unknown)}"
+
+    # Anything the thresholds flagged must still be acknowledged; silently
+    # dropping a triggered hazard is how a real warning goes missing.
+    dropped = set(rules.triggered_parameters) - set(ai.triggered_parameters)
+    if dropped:
+        return f"dropped triggered parameters {sorted(dropped)}"
+
+    if any(not (a.title or "").strip() for a in ai.active_alerts):
+        return "alert with no title"
+
+    return None
+
 
 def fallback_rules_risk_assessment(
     wave_height: float,

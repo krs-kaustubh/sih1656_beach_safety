@@ -94,15 +94,26 @@ class ProviderAPISettings(BaseSettings):
         )
 
 
+# WhatsApp (WAHA) notification gateway. Reads WAHA_* keys from .env.
+class WAHASettings(BaseSettings):
+    BASE_URL: str = "http://localhost:3000"
+    API_KEY: str = ""
+    SESSION: str = "default"
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_prefix="WAHA_", extra="ignore"
+    )
+
+
 class Settings(BaseSettings):
     demo: DemoSettings = DemoSettings()
     providers: ProviderAPISettings = ProviderAPISettings()
+    waha: WAHASettings = WAHASettings()
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
-
 
 settings = Settings()
