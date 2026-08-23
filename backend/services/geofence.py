@@ -1,7 +1,7 @@
 import logging
 import math
 from typing import Dict, List, Optional, Protocol, Sequence, Tuple
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon  # type: ignore
 
 logger = logging.getLogger("geofence_service")
 
