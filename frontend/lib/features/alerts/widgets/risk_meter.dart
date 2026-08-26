@@ -37,7 +37,7 @@ class RiskMeter extends StatelessWidget {
               final width = constraints.maxWidth;
               const dot = 11.0;
               // Dots sit at the centre of each third so they line up with the
-              // labels below rather than with the track's raw endpoints.
+
               final segment = width / levels.length;
               double centreOf(int i) => segment * i + segment / 2;
 
