@@ -22,6 +22,7 @@ class SettingsStore {
   static const _alertFilter = 'settings.alertFilter';
   static const _alertChannel = 'settings.alertChannel';
   static const _defaultBeach = 'settings.defaultBeachId';
+  static const _whatsappNumber = 'settings.whatsappNumber';
 
   T _readEnum<T extends Enum>(String key, List<T> values, T fallback) {
     final name = _prefs.getString(key);
@@ -45,6 +46,7 @@ class SettingsStore {
         alertChannel:
             _readEnum(_alertChannel, AlertChannel.values, AlertChannel.off),
         defaultBeachId: _prefs.getInt(_defaultBeach),
+        whatsappNumber: _prefs.getString(_whatsappNumber) ?? '',
       );
 
   Future<void> write(AppSettings settings) async {
@@ -59,6 +61,7 @@ class SettingsStore {
         _prefs.setInt(_defaultBeach, settings.defaultBeachId!)
       else
         _prefs.remove(_defaultBeach),
+      _prefs.setString(_whatsappNumber, settings.whatsappNumber),
     ]);
   }
 }
