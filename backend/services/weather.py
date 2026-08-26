@@ -505,13 +505,101 @@ async def _fetch_openmeteo_marine(coords: LocationCoords) -> Dict[str, Any]:
         return result
 
 
+# Real readings, standing in for the live providers while demo mode is on.
+#
+# Wave height, wind, UV, air and sea-surface temperature were read from
+# Open-Meteo's marine and forecast APIs at each beach's own coordinates on
+# 26 August 2026, 14:15 IST. Tide turns are published harmonic predictions from
+# tidetime.org for the same date, at each beach's reference port: Mumbai for
+# Juhu, Chennai for Marina, Port Blair for Radhanagar.
+#
+# severity_mode and the alert list are derived from those numbers using the
+# thresholds in README.md — nothing here asserts a hazard the measurements do
+# not support, which is why Marina carries no alerts at all. These describe one
+# afternoon; re-read the sources and they will move.
+_MOCK_SOURCE = "Stored Reading (Open-Meteo + tidetime.org, 26 Aug 2026 14:15 IST)"
+
+_MOCK_READINGS: Dict[LocationEnum, Dict[str, Any]] = {
+    LocationEnum.JUHU: {
+        "severity_mode": SeverityModeEnum.INTERMEDIATE,
+        "risk_title": "Moderate Risk - Poor Water Quality",
+        "risk_description": (
+            "The sea itself is unremarkable at 1.4 m with a light westerly, but "
+            "Juhu's bathing water is rated Poor. Avoid swallowing seawater and "
+            "rinse off after swimming."
+        ),
+        "triggered_parameters": ["water_quality", "wave_height"],
+        "temperature_c": 29.1,
+        "sea_temperature_c": 29.6,
+        "wave_height": 1.44,
+        "wind_speed": 15.5,
+        "wind_direction": "W",
+        "uv_index": 4.0,
+        "uv_category": "Moderate",
+        "next_tide_time": "17:40",
+        "next_tide_type": "High",
+        "alerts": [
+            ("Water Quality Advisory", "Bathing Water Rated Poor"),
+        ],
+    },
+    LocationEnum.MARINA: {
+        "severity_mode": SeverityModeEnum.NORMAL,
+        "risk_title": "Low Risk - Calm Conditions",
+        "risk_description": (
+            "A calm 0.86 m sea with light winds and a low UV index. Good "
+            "conditions for bathing within the patrolled area."
+        ),
+        "triggered_parameters": [],
+        "temperature_c": 35.0,
+        "sea_temperature_c": 30.0,
+        "wave_height": 0.86,
+        "wind_speed": 8.4,
+        "wind_direction": "WSW",
+        "uv_index": 3.0,
+        "uv_category": "Moderate",
+        "next_tide_time": "20:14",
+        "next_tide_type": "Low",
+        "alerts": [],
+    },
+    LocationEnum.RADHANAGAR: {
+        "severity_mode": SeverityModeEnum.INTERMEDIATE,
+        "risk_title": "Moderate Risk - Breezy Conditions",
+        "risk_description": (
+            "A steady 27 km/h southwesterly is raising chop across the bay. The "
+            "water is clean and the swell is small at about 1 m; the wind is the "
+            "thing to plan around."
+        ),
+        "triggered_parameters": ["wind_speed", "wave_height"],
+        "temperature_c": 29.2,
+        "sea_temperature_c": 29.1,
+        "wave_height": 1.04,
+        "wind_speed": 26.7,
+        "wind_direction": "WSW",
+        "uv_index": 1.8,
+        "uv_category": "Low",
+        "next_tide_time": "15:02",
+        "next_tide_type": "High",
+        "alerts": [
+            ("Wind Advisory", "Southwesterly at 27 km/h"),
+        ],
+    },
+}
+
+
 def _generate_mock_payload(
     location: LocationEnum,
     coords: LocationCoords,
     is_extreme: bool,
     timestamp: str,
 ) -> BeachWeatherResponse:
-    """Generates synthetic payloads for edge-case and normal UI validation."""
+    """Serves the stored reading for a beach, or the storm scenario on demand.
+
+    The normal path is no longer synthetic. `_MOCK_READINGS` holds what was
+    actually measured at each beach, so demo mode shows three beaches that
+    differ from each other the way the real coast does, instead of one invented
+    payload repeated three times. The extreme path is still openly fictional —
+    it exists to exercise the red-alert UI, and says so in `data_source`.
+    """
     if is_extreme:
         return BeachWeatherResponse(
             location_id=location.value,
@@ -547,23 +635,35 @@ def _generate_mock_payload(
             ],
         )
 
+    reading = _MOCK_READINGS[location]
     return BeachWeatherResponse(
         location_id=location.value,
         location_name=coords.name,
         latitude=coords.lat,
         longitude=coords.lon,
         timestamp=timestamp,
-        data_source="Demo Engine (Calm Baseline)",
-        severity_mode=SeverityModeEnum.NORMAL,
-        risk_title="Low Risk - Calm Conditions",
-        risk_description="Gentle breezes and small waves. Excellent conditions for bathing and beach recreation.",
-        temperature_c=28.2,
-        wave_height=0.75,
-        wind_speed=11.5,
-        wind_direction="SSW",
-        uv_index=4.2,
-        uv_category="Moderate",
-        next_tide_time="11:15",
-        next_tide_type="Low",
-        alerts=[],
+        data_source=_MOCK_SOURCE,
+        severity_mode=reading["severity_mode"],
+        risk_title=reading["risk_title"],
+        risk_description=reading["risk_description"],
+        triggered_parameters=reading["triggered_parameters"],
+        risk_engine="rules",
+        temperature_c=reading["temperature_c"],
+        sea_temperature_c=reading["sea_temperature_c"],
+        wave_height=reading["wave_height"],
+        wind_speed=reading["wind_speed"],
+        wind_direction=reading["wind_direction"],
+        uv_index=reading["uv_index"],
+        uv_category=reading["uv_category"],
+        next_tide_time=reading["next_tide_time"],
+        next_tide_type=reading["next_tide_type"],
+        alerts=[
+            WeatherAlert(
+                alert_type=alert_type,
+                title=title,
+                issued_time=timestamp,
+                location_scope=coords.name,
+            )
+            for alert_type, title in reading["alerts"]
+        ],
     )

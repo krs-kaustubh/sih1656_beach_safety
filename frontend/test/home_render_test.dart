@@ -37,9 +37,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Juhu Beach'), findsOneWidget);
-    expect(find.text('High Risk'), findsOneWidget);
+    expect(find.text('Moderate Risk'), findsOneWidget);
     expect(find.text('Wave Height'), findsOneWidget);
-    expect(find.text('Rip Current Warning'), findsOneWidget);
+    expect(find.text('Poor Water Quality'), findsOneWidget);
   });
 
   testWidgets('Alert detail renders every section', (tester) async {
@@ -64,15 +64,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Rip Current Warning'), findsOneWidget);
+    expect(find.text('Poor Water Quality'), findsOneWidget);
     expect(find.text('RISK LEVEL'), findsOneWidget);
     expect(find.text('LIFEGUARD STATUS'), findsOneWidget);
     expect(find.text('Tower 3'), findsOneWidget);
     expect(find.text('CURRENT CONDITIONS'), findsOneWidget);
     expect(find.text("WHAT'S HAPPENING"), findsOneWidget);
     expect(find.text('WHAT TO DO'), findsOneWidget);
-    // Severe alerts must show the urgency chip, not just the colour.
-    expect(find.text('SEVERE · ACT NOW'), findsOneWidget);
+    // The urgency chip must be shown, not just the colour.
+    expect(find.text('MODERATE · ADVISORY'), findsOneWidget);
   });
 
   testWidgets('a beach with no alerts shows the safe empty state', (tester) async {
@@ -86,9 +86,9 @@ void main() {
             MockBeachRepository(latency: Duration.zero),
           ),
           mapGeometryProvider.overrideWith((ref) => geometry),
-          // Om Beach (id 4) is the low-risk beach carrying no alerts, which is
-          // what the low-risk Home design shows.
-          selectedBeachIdProvider.overrideWith(() => _FixedBeachId(4)),
+          // Marina (id 2) is the beach whose readings cross no threshold, so
+          // it carries no alerts — what the low-risk Home design shows.
+          selectedBeachIdProvider.overrideWith(() => _FixedBeachId(2)),
         ],
         child: MaterialApp(theme: buildAppTheme(), home: const AppShell()),
       ),

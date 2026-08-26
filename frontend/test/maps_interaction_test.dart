@@ -159,7 +159,7 @@ void main() {
 
     expect(container.read(selectedBeachIdProvider), marina.id);
     expect(find.text('Marina Beach'), findsOneWidget);
-    expect(find.text('Moderate Risk'), findsOneWidget);
+    expect(find.text('Low Risk'), findsOneWidget);
   });
 
   testWidgets('tapping empty ocean does not change the selection',
@@ -195,6 +195,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Juhu Beach'), findsOneWidget);
-    expect(find.text('High Risk'), findsOneWidget);
+    expect(find.text('Moderate Risk'), findsOneWidget);
   });
 }

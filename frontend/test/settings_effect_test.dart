@@ -48,57 +48,57 @@ void main() {
   }
 
   testWidgets('wave height and wind follow the chosen units', (tester) async {
-    // Marina: 1.4 m, 18 km/h, UV 6. Chosen because none of its converted
-    // values collide with another reading on the same screen — on Juhu, wave
-    // height in feet is 9 and so is the UV index.
-    const marina = 2;
+    // Juhu: 1.44 m, 15.5 km/h, UV 4. Chosen because none of its converted
+    // values collide with another reading on the same screen — on Marina, wave
+    // height in feet is 3 and so is the UV index.
+    const juhu = 1;
 
-    await pumpApp(tester, const AppSettings(defaultBeachId: marina));
+    await pumpApp(tester, const AppSettings(defaultBeachId: juhu));
     expect(find.text('1.4'), findsOneWidget);
     expect(find.text('m'), findsOneWidget);
-    expect(find.text('18'), findsOneWidget);
-    expect(find.text('km/h SW'), findsOneWidget);
+    expect(find.text('16'), findsOneWidget);
+    expect(find.text('km/h W'), findsOneWidget);
 
     await pumpApp(
       tester,
       const AppSettings(
         waveHeightUnit: DistanceUnit.feet,
         windSpeedUnit: SpeedUnit.knots,
-        defaultBeachId: marina,
+        defaultBeachId: juhu,
       ),
     );
     expect(find.text('5'), findsOneWidget);
     expect(find.text('ft'), findsOneWidget);
-    expect(find.text('10'), findsOneWidget);
-    expect(find.text('kn SW'), findsOneWidget);
+    expect(find.text('8'), findsOneWidget);
+    expect(find.text('kn W'), findsOneWidget);
   });
 
   testWidgets('the tide readout uses the same clock as the header',
       (tester) async {
-    // Juhu's next tide is 12:30. Before settings existed the header was
+    // Juhu's next tide is 17:40. Before settings existed the header was
     // 12-hour and the tide 24-hour on this very screen.
     await pumpApp(tester, const AppSettings(timeFormat: TimeFormat.twelveHour));
-    expect(find.text('12:30 PM'), findsOneWidget);
+    expect(find.text('5:40 PM'), findsOneWidget);
 
     await pumpApp(
       tester,
       const AppSettings(timeFormat: TimeFormat.twentyFourHour),
     );
-    expect(find.text('12:30'), findsOneWidget);
+    expect(find.text('17:40'), findsOneWidget);
   });
 
   testWidgets('the severity filter hides lower-risk alerts', (tester) async {
-    // Marina has a moderate rip current advisory and a moderate UV warning.
+    // Om carries a moderate UV advisory and a moderate surf advisory.
     var container = await pumpApp(
       tester,
-      const AppSettings(defaultBeachId: 2),
+      const AppSettings(defaultBeachId: 4),
     );
     expect(container.read(alertsProvider).value, hasLength(2));
 
     container = await pumpApp(
       tester,
       const AppSettings(
-        defaultBeachId: 2,
+        defaultBeachId: 4,
         alertFilter: AlertSeverityFilter.severeOnly,
       ),
     );
@@ -108,12 +108,12 @@ void main() {
 
   testWidgets('the filter never hides the beach\'s own risk rating',
       (tester) async {
-    // Hiding the alerts must not soften the headline: Marina is still
+    // Hiding the alerts must not soften the headline: Om is still
     // Moderate Risk even when its advisories are filtered out.
     await pumpApp(
       tester,
       const AppSettings(
-        defaultBeachId: 2,
+        defaultBeachId: 4,
         alertFilter: AlertSeverityFilter.severeOnly,
       ),
     );
